@@ -85,7 +85,7 @@ cfg.timescales = 1:40;
 cfg.recompute_r = 'perscale_toi_sp';
 cfg.coarsegrainmethod = 'filtskip';
 cfg.filtmethod = 'lp';
-cfg.mem_available = 20e+09;
+cfg.mem_available = 40e+09;
 cfg.allowgpu = true;
 
 % cfg.trials = 1:50;
