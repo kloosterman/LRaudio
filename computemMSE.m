@@ -8,11 +8,11 @@ icond = cfg.icond;
 outpath = cfg.outpath;
 mse = [];
 
-if exist(outpath)
-  disp('Output file exists')
-  load(outpath)
-  return
-end
+% if exist(outpath)
+%   disp('Output file exists')
+%   load(outpath)
+%   return
+% end
 
 disp(datafile)
 load(datafile)
