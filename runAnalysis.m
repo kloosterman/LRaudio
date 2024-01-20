@@ -10,6 +10,7 @@ restoredefaultpath
 addpath(fullfile(toolspath, 'fieldtrip')); ft_defaults
 addpath(fullfile(toolspath, 'mMSE'));
 addpath(fullfile(toolspath, 'LRaudio'))
+cd(fullfile(toolspath, 'LRaudio')); !git pull
 addpath(fullfile(toolspath, 'qsub-tardis')) 
 
 outputpath = fullfile(fileparts(datapath), 'outputdata');
