@@ -46,7 +46,7 @@ fun2run = @computemMSE;
 if ismac
   mse = cellfun(fun2run, cfglist, 'Uni', 0);
 else
-  mse = qsubcellfun(fun2run, cfglist, 'memreq', 20e9, 'timreq',  8*60*60, 'stack', 1, 'StopOnError', false, 'backend', 'slurm', 'options', []);  
+  mse = qsubcellfun(fun2run, cfglist, 'memreq', 10e9, 'timreq',  8*60*60, 'stack', 1, 'StopOnError', false, 'backend', 'slurm', 'options', []);  
 end
 mse
 
