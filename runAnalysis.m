@@ -10,7 +10,6 @@ restoredefaultpath
 addpath(fullfile(toolspath, 'fieldtrip')); ft_defaults
 addpath(fullfile(toolspath, 'mMSE'));
 addpath(fullfile(toolspath, 'LRaudio'))
-cd(fullfile(toolspath, 'LRaudio')); !git pull
 addpath(fullfile(toolspath, 'qsub-tardis')) 
 
 outputpath = fullfile(fileparts(datapath), 'outputdata');
@@ -46,7 +45,8 @@ fun2run = @computemMSE;
 if ismac
   mse = cellfun(fun2run, cfglist, 'Uni', 0);
 else
-  mse = qsubcellfun(fun2run, cfglist, 'memreq', 10e9, 'timreq',  8*60*60, 'stack', 1, 'StopOnError', false, 'backend', 'slurm', 'options', []);  
+  mse = qsubcellfun(fun2run, cfglist, 'memreq', 10e9, 'timreq',  8*60*60, 'stack', 1, ...
+    'StopOnError', false, 'backend', 'slurm', 'options', '--cpus-per-task=2');  
 end
 mse
 
