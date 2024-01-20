@@ -12,7 +12,7 @@ addpath(fullfile(toolspath, 'mMSE'));
 addpath(fullfile(toolspath, 'LRaudio'))
 addpath(fullfile(toolspath, 'qsub-tardis')) 
 
-outputpath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/outputdata';
+outputpath = fullfile(fileparts(datapath, 'outputdata'));
 mkdir(outputpath)
 
 %% define subjects
