@@ -2,7 +2,8 @@ if ismac
   datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
   toolspath = '/Users/kloosterman/Documents/GitHub/';
 else
-  %   codepath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data/EEGData'
+  datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
+  toolspath = '/Users/kloosterman/Documents/GitHub/';
 end
 
 restoredefaultpath
@@ -20,7 +21,7 @@ for i=1:36
   SUBJ{end+1} = sprintf('%d', i);
 end
 SUBJbool = true(size(SUBJ));
-SUBJbool([10, 12, 15, 17]) = false; % exclude 10, 15 and 17, 12 conditions missing
+SUBJbool([10, 12, 15, 17]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
 SUBJ = SUBJ(SUBJbool);
 disp(SUBJ)
 
