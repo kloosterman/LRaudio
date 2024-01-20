@@ -2,8 +2,8 @@ if ismac
   datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
   toolspath = '/Users/kloosterman/Documents/GitHub/';
 else
-  datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
-  toolspath = '/Users/kloosterman/Documents/GitHub/';
+  datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
+  toolspath = '/home/mpib/kloosterman/GitHub/';
 end
 
 restoredefaultpath
@@ -41,12 +41,11 @@ for isub = 1:length(SUBJ)
 end
 %
 % submit to tardis, or run locally
-backend = 'local'; % 'local'
 fun2run = @computemMSE;
-if strcmp(backend, 'local')
+if ismac
   mse = cellfun(fun2run, cfglist, 'Uni', 0);
 else
-  mse = qsubcellfun(fun2run, cfglist, 'memreq', 20000 *1e6, 'timreq',  720*60, 'stack', 1, 'StopOnError', false, 'backend', backend, 'options', []);
+  mse = qsubcellfun(fun2run, cfglist, 'memreq', 20000 *1e6, 'timreq',  720*60, 'stack', 1, 'StopOnError', false, 'backend', 'slurm', 'options', []);  
 end
 mse
 
