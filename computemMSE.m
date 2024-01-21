@@ -98,23 +98,23 @@ if ismac & plotit
   mse.freq = mse.timescales;
   mse.powspctrm = mse.sampen;
   mse.dimord =  'chan_freq_time';
-  mse_noerp.freq = mse_noerp.timescales;
-  mse_noerp.powspctrm = mse_noerp.sampen;
-  mse_noerp.dimord =  'chan_freq_time';
-  mse_noerpregress.freq = mse_noerpregress.timescales;
-  mse_noerpregress.powspctrm = mse_noerpregress.sampen;
-  mse_noerpregress.dimord =  'chan_freq_time';
-  mse_diff = mse_noerp;
-  mse_diff.powspctrm = mse.powspctrm - mse_noerpregress.powspctrm;
+%   mse_noerp.freq = mse_noerp.timescales;
+%   mse_noerp.powspctrm = mse_noerp.sampen;
+%   mse_noerp.dimord =  'chan_freq_time';
+%   mse_noerpregress.freq = mse_noerpregress.timescales;
+%   mse_noerpregress.powspctrm = mse_noerpregress.sampen;
+%   mse_noerpregress.dimord =  'chan_freq_time';
+%   mse_diff = mse_noerp;
+%   mse_diff.powspctrm = mse.powspctrm - mse_noerpregress.powspctrm;
   cfg=[];
   cfg.layout = 'acticap-64ch-standard2.mat';
   %     cfg.zlim = [0.8 1.2];
   cfg.colorbar = 'yes';
-  cfg.baseline = [-0.5 0];
-  %     cfg.baselinetype = 'relchange';
-  cfg.zlim = 'maxabs';
+%   cfg.baseline = [-0.5 0];
+%       cfg.baselinetype = 'relchange';
+%   cfg.zlim = 'maxabs';
   %     cfg.xlim = [-0.5 1.5];
-  ft_multiplotTFR(cfg,mse_diff)
+  ft_multiplotTFR(cfg,mse)
 end
 
 disp(outpath)
