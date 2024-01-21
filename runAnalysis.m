@@ -29,6 +29,7 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
+overwrite = 0;
 mkdir(fileparts(datapath), 'mse')
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
@@ -36,19 +37,22 @@ for isub = 1:length(SUBJ)
   for icond = 1:2
     cfg.icond = icond;
     cfg.outpath = fullfile(fileparts(datapath), 'mse', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    cfglist{isub,icond} = cfg;
+    if ~exist(cfg.outpath, 'file')
+      cfglist{end+1} = cfg;
+    else
+      disp('File exists, skipping')
+    end
   end      
 end
 %
 % submit to tardis, or run locally
 fun2run = @computemMSE;
 if ismac
-  mse = cellfun(fun2run, cfglist, 'Uni', 0);
+  cellfun(fun2run, cfglist, 'Uni', 0);
 else
-  mse = qsubcellfun(fun2run, cfglist, 'memreq', 100e9, 'timreq', 24*60*60, 'stack', 1, ...
+  qsubcellfun(fun2run, cfglist, 'memreq', 100e9, 'timreq', 24*60*60, 'stack', 1, ...
     'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');  
 end
-mse
 
 %%
 
