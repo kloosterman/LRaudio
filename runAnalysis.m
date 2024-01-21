@@ -50,7 +50,7 @@ fun2run = @computemMSE;
 if ismac
   cellfun(fun2run, cfglist, 'Uni', 0);
 else
-  qsubcellfun(fun2run, cfglist, 'memreq', 100e9, 'timreq', 24*60*60, 'stack', 1, ...
+  qsubcellfun(fun2run, cfglist, 'memreq', 100e9, 'timreq', 23*60*60, 'stack', 1, ...
     'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');  
 end
 
