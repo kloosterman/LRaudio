@@ -1,5 +1,6 @@
 if ismac
-  datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
+%   datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
+  datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
   toolspath = '/Users/kloosterman/Documents/GitHub/';
 else
   datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
@@ -54,5 +55,59 @@ else
     'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');  
 end
 
-%%
+%% Merge mse files across subjects and cond
+disp 'Merge mse'
+mse_tmp = {};
+trialinfo = [];
+for isub = 1:length(SUBJ)
+  cfg.SUBJ = SUBJ{isub};
+  cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
+  for icond = 1:2
+    cfg.icond = icond;
+    cfg.outpath = fullfile(fileparts(datapath), 'mse', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    disp(cfg.outpath)
+    if exist(cfg.outpath, 'file')      
+      load(cfg.outpath)
+      mse.freq = mse.timescales;
+      mse.powspctrm = mse.sampen;
+      mse.dimord = 'chan_freq_time';
+      mse_tmp{isub,icond} = mse;
+      trialinfo(isub,:,icond) = mean(mse.trialinfo);
+    else
+      disp('File not found, skipping')
+    end
+  end  
+end
+cfg=[];
+cfg.keepindividual = 'yes';
+mse_merged{1} = ft_freqgrandaverage(cfg, mse_tmp{:,1});
+mse_merged{2} = ft_freqgrandaverage(cfg, mse_tmp{:,2});
+cfg.keepindividual = 'no';
+mse_merged{3} = ft_freqgrandaverage(cfg, mse_merged{1:2});
+cfg=[];
+cfg.operation = 'subtract';
+cfg.parameter = 'powspctrm';
+mse_merged{4} = ft_math(cfg, mse_merged{1}, mse_merged{2});
+% add behavior
+mse_merged{1}.trialinfo = trialinfo(:,:,1);
+mse_merged{2}.trialinfo = trialinfo(:,:,2);
+mse_merged{3}.trialinfo = mean(trialinfo, 3);
+mse_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
+
+%% plot mse
+cfg=[];
+cfg.layout = 'acticap-64ch-standard2.mat';
+%     cfg.zlim = [0.8 1.2];
+cfg.colorbar = 'yes';
+% cfg.baseline = [-0.5 0];
+% cfg.baselinetype = 'relchange';
+cfg.zlim = 'maxabs';
+% cfg.zlim = [1.17 1.23];
+%     cfg.xlim = [-0.5 1.5];
+ft_multiplotTFR(cfg,mse_merged{4})
+
+% cfg.frequency = 80;
+% ft_multiplotER(cfg,mse_merged{1:2})
+%% run stats: correlation mMSE vs behavior
+
 

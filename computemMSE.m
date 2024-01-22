@@ -21,6 +21,12 @@ data = cleaned; clear cleaned
 %     cfg.viewmode = 'vertical';
 %     ft_databrowser(cfg, cleaned)
 
+cfg=[];
+ft_scalpcurrentdensity(cfg, data)
+
+
+
+
 disp 'select valid trials...'
 cfg=[];
 cfg.trials = ~isnan(data.trialinfo(:,7));
