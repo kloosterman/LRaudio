@@ -62,18 +62,17 @@ else
 end
 
 %% Merge mse files across subjects and cond
-disp 'Merge mse'
+disp 'Merge mse and freq'
 mse_tmp = {};
+freq_tmp = {};
 trialinfo = [];
 for isub = 1:length(SUBJ)
-  cfg.SUBJ = SUBJ{isub};
-  cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
+%   datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
-    cfg.icond = icond;
-    cfg.outpath = fullfile(fileparts(datapath), 'mse', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    disp(cfg.outpath)
-    if exist(cfg.outpath, 'file')      
-      load(cfg.outpath)
+    path = fullfile(fileparts(datapath), 'mse', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    disp(path)
+    if exist(path, 'file')
+      load(path)
       mse.freq = mse.timescales;
       mse.powspctrm = mse.sampen;
       mse.dimord = 'chan_freq_time';
@@ -82,8 +81,21 @@ for isub = 1:length(SUBJ)
     else
       disp('File not found, skipping')
     end
-  end  
+    path = fullfile(fileparts(datapath), 'freq', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    disp(path)
+    if exist(path, 'file')
+      load(path)
+      cfg=[];
+      cfg.baseline = [-0.5 0];
+      cfg.baselinetype = 'relchange';
+      freq = ft_freqbaseline(cfg, freq);
+      freq_tmp{isub,icond} = freq;
+    else
+      disp('File not found, skipping')
+    end
+  end
 end
+%% combine mse 
 cfg=[];
 cfg.keepindividual = 'yes';
 mse_merged{1} = ft_freqgrandaverage(cfg, mse_tmp{:,1});
@@ -100,6 +112,23 @@ mse_merged{2}.trialinfo = trialinfo(:,:,2);
 mse_merged{3}.trialinfo = mean(trialinfo, 3);
 mse_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
 
+%% combine freq 
+cfg=[];
+cfg.keepindividual = 'yes';
+freq_merged{1} = ft_freqgrandaverage(cfg, freq_tmp{:,1});
+freq_merged{2} = ft_freqgrandaverage(cfg, freq_tmp{:,2});
+cfg.keepindividual = 'no';
+freq_merged{3} = ft_freqgrandaverage(cfg, freq_merged{1:2});
+cfg=[];
+cfg.operation = 'subtract';
+cfg.parameter = 'powspctrm';
+freq_merged{4} = ft_math(cfg, freq_merged{1}, freq_merged{2});
+% add behavior
+freq_merged{1}.trialinfo = trialinfo(:,:,1);
+freq_merged{2}.trialinfo = trialinfo(:,:,2);
+freq_merged{3}.trialinfo = mean(trialinfo, 3);
+freq_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
+
 %% plot mse
 cfg=[];
 cfg.layout = lay;
@@ -111,12 +140,28 @@ cfg.colorbar = 'yes';
 cfg.zlim = [1.17 1.23];
 %     cfg.xlim = [-0.5 1.5];
 ft_multiplotTFR(cfg,mse_merged{3})
-
-%% plot mMSE time courses
+% plot mMSE time courses
 cfg=[];
 cfg.layout = lay;
 cfg.frequency = 80;
 ft_multiplotER(cfg,mse_merged{1:2})
+
+%% plot freq
+cfg=[];
+cfg.layout = lay;
+cfg.colorbar = 'yes';
+cfg.baseline = [-0.5 0];
+cfg.baselinetype = 'relchange';
+cfg.zlim = 'maxabs';
+ft_multiplotTFR(cfg,freq_merged{3})
+% plot freq time courses
+cfg=[];
+cfg.layout = lay;
+cfg.frequency = 6;
+cfg.baseline = [-0.5 0];
+cfg.baselinetype = 'relchange';
+cfg.zlim = 'maxabs';
+ft_multiplotER(cfg,freq_merged{1:2})
 %% run stats: correlation mMSE vs behavior
 cfg = []; 
 cfg.method    = 'triangulation';
@@ -124,16 +169,15 @@ cfg.method    = 'triangulation';
 cfg.layout = lay;
 % cfg.template = 'elec1010_neighb.mat';
 neighbours       = ft_prepare_neighbours(cfg);
-cfg = [];
-% cfg.layout = 'acticap-64ch-standard2.mat';
-% cfg.layout = 'EEG1010.lay';
-cfg.layout = lay;
-cfg.neighbours = neighbours;
-ft_neighbourplot(cfg)
+% cfg = [];
+% % cfg.layout = 'acticap-64ch-standard2.mat';
+% % cfg.layout = 'EEG1010.lay';
+% cfg.layout = lay;
+% cfg.neighbours = neighbours;
+% ft_neighbourplot(cfg)
 
 cfg = []; 
-cfg.design = mse_merged{4}.trialinfo(:,3); % 3 is accuracy
-cfg.design = mse_merged{4}.trialinfo(:,6); % - Tracking parameter (delta_f in semitones): 		eegdata.trialinfo, 6th column
+cfg.design = freq_merged{4}.trialinfo(:,3); % 3 is accuracy
 % cfg.frequency = 80;
 cfg.latency = [-0.5 1.5];
 cfg.uvar     = [];
@@ -152,8 +196,7 @@ cfg.numrandomization = 100;
 cfg.neighbours       = neighbours;
 % cfg.minnbchan        = 0;
 cfg.spmversion = 'spm12';
-% corrstat = ft_freqstatistics(cfg, mse_merged{4}); % incong - cong
-corrstat = ft_freqstatistics(cfg, mse_merged{3}); % cong avg
+corrstat = ft_freqstatistics(cfg, freq_merged{4}); % incong - cong
 
 %% plot 
 cfg=[];
@@ -168,8 +211,8 @@ cfg.colorbar = 'yes';
 cfg.zlim = 'maxabs';
 % cfg.zlim = [1.17 1.23];
 %     cfg.xlim = [-0.5 1.5];
-% cfg.maskparameter = 'mask';
-% corrstat.mask = double(corrstat.negclusterslabelmat > 0);
+cfg.maskparameter = 'mask';
+corrstat.mask = double(corrstat.posclusterslabelmat == 1);
 ft_multiplotTFR(cfg, corrstat)
 % ft_multiplotER(cfg, corrstat)
 
