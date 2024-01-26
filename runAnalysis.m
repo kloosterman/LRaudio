@@ -16,6 +16,10 @@ addpath(fullfile(toolspath, 'qsub-tardis'))
 outputpath = fullfile(fileparts(datapath), 'outputdata');
 mkdir(outputpath)
 
+%% make eeg layout
+load('acticap-64ch-standard2.mat')
+lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
+
 %% define subjects
 SUBJ={};
 for i=1:36
@@ -26,10 +30,11 @@ SUBJbool([10, 12, 15, 17]) = false; % exclude 10 and 15, 17 missing, 12 conditio
 SUBJ = SUBJ(SUBJbool);
 disp(SUBJ)
 
-%% compute entropy
+%% compute entropy, freqanalysis and ERPs
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
+cfg.analysis = 'freq'; % freq, mse, or erp
 overwrite = 0;
 mkdir(fileparts(datapath), 'mse')
 for isub = 1:length(SUBJ)
@@ -96,7 +101,65 @@ mse_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
 
 %% plot mse
 cfg=[];
-cfg.layout = 'acticap-64ch-standard2.mat';
+cfg.layout = lay;
+%     cfg.zlim = [0.8 1.2];
+cfg.colorbar = 'yes';
+% cfg.baseline = [-0.5 0];
+% cfg.baselinetype = 'relchange';
+% cfg.zlim = 'maxabs';
+cfg.zlim = [1.17 1.23];
+%     cfg.xlim = [-0.5 1.5];
+ft_multiplotTFR(cfg,mse_merged{3})
+
+%% plot mMSE time courses
+cfg=[];
+cfg.layout = lay;
+cfg.frequency = 80;
+ft_multiplotER(cfg,mse_merged{1:2})
+%% run stats: correlation mMSE vs behavior
+cfg = []; 
+cfg.method    = 'triangulation';
+% cfg.layout = 'acticap-64ch-standard2.mat';
+cfg.layout = lay;
+% cfg.template = 'elec1010_neighb.mat';
+neighbours       = ft_prepare_neighbours(cfg);
+cfg = [];
+% cfg.layout = 'acticap-64ch-standard2.mat';
+% cfg.layout = 'EEG1010.lay';
+cfg.layout = lay;
+cfg.neighbours = neighbours;
+ft_neighbourplot(cfg)
+
+cfg = []; 
+cfg.design = mse_merged{4}.trialinfo(:,3); % 3 is accuracy
+cfg.design = mse_merged{4}.trialinfo(:,6); % - Tracking parameter (delta_f in semitones): 		eegdata.trialinfo, 6th column
+% cfg.frequency = 80;
+cfg.latency = [-0.5 1.5];
+cfg.uvar     = [];
+cfg.ivar     = 1;
+cfg.method           = 'montecarlo';
+cfg.statistic        = 'ft_statfun_correlationT';  %depsamplesT ft_statfun_correlationT_corrcol
+% cfg.statistic        = 'ft_statfun_partialcorrelationT';  %depsamplesT ft_statfun_correlationT_corrcol
+cfg.type             = 'Pearson'; % Spearman Pearson
+cfg.correctm         = 'cluster';  %'no'
+cfg.clusteralpha     = 0.05;
+cfg.clusterstatistic = 'maxsum';
+cfg.tail             = 0;
+cfg.clustertail      = 0;
+cfg.alpha            = 0.025;
+cfg.numrandomization = 100;
+cfg.neighbours       = neighbours;
+% cfg.minnbchan        = 0;
+cfg.spmversion = 'spm12';
+% corrstat = ft_freqstatistics(cfg, mse_merged{4}); % incong - cong
+corrstat = ft_freqstatistics(cfg, mse_merged{3}); % cong avg
+
+%% plot 
+cfg=[];
+% cfg.layout = 'acticap-64ch-standard2.mat';
+% cfg.layout = 'EEG1010.lay';
+cfg.layout = lay;
+cfg.parameter = 'rho';
 %     cfg.zlim = [0.8 1.2];
 cfg.colorbar = 'yes';
 % cfg.baseline = [-0.5 0];
@@ -104,10 +167,25 @@ cfg.colorbar = 'yes';
 cfg.zlim = 'maxabs';
 % cfg.zlim = [1.17 1.23];
 %     cfg.xlim = [-0.5 1.5];
-ft_multiplotTFR(cfg,mse_merged{4})
+% cfg.maskparameter = 'mask';
+% corrstat.mask = double(corrstat.negclusterslabelmat > 0);
+ft_multiplotTFR(cfg, corrstat)
+% ft_multiplotER(cfg, corrstat)
 
-% cfg.frequency = 80;
-% ft_multiplotER(cfg,mse_merged{1:2})
-%% run stats: correlation mMSE vs behavior
-
-
+%% get data for scatter
+cfg=[];
+cfg.latency = [0.25 0.4];
+% cfg.latency = [1 1];
+cfg.frequency = [70.027211 142.952381];
+% cfg.channel = {'FC1' 'FC3' 'FCz'};
+cfg.channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
+cfg.avgoverchan = 'yes';
+cfg.avgovertime = 'yes';
+cfg.avgoverfreq = 'yes';
+corrdat = ft_selectdata(cfg, mse_merged{4});
+figure; scatter(corrdat.powspctrm , mse_merged{4}.trialinfo(:,3), 100, 'MarkerEdgeColor',[1 1 1],...
+  'MarkerFaceColor',[0 0 0], 'LineWidth',1.5);
+xlabel('Incongruent–congruent mMSE');    ylabel('Incongruent–congruent Accuracy')
+[rho, p] = corr(corrdat.powspctrm , mse_merged{4}.trialinfo(:,3));
+title(sprintf('r = %.2f, p = %g', rho, p));
+lsline; box on; axis square

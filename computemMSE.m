@@ -21,8 +21,9 @@ data = cleaned; clear cleaned
 %     cfg.viewmode = 'vertical';
 %     ft_databrowser(cfg, cleaned)
 
-cfg=[];
-ft_scalpcurrentdensity(cfg, data)
+
+% cfg=[];
+% ft_scalpcurrentdensity(cfg, data)
 
 
 
