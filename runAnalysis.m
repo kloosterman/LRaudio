@@ -35,6 +35,7 @@ disp(SUBJ)
 cfglist = {};
 cfg=[];
 cfg.analysis = 'freq'; % freq, mse, or erp
+mkdir(fullfile(fileparts(datapath), cfg.analysis))
 overwrite = 0;
 mkdir(fileparts(datapath), 'mse')
 for isub = 1:length(SUBJ)
@@ -42,7 +43,7 @@ for isub = 1:length(SUBJ)
   cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
     cfg.icond = icond;
-    cfg.outpath = fullfile(fileparts(datapath), 'mse', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    cfg.outpath = fullfile(fileparts(datapath), cfg.analysis, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     if ~exist(cfg.outpath, 'file')
       cfglist{end+1} = cfg;
     else

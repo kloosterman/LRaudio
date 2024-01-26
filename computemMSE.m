@@ -6,6 +6,8 @@ datafile = cfg.datafile;
 SUBJ = cfg.SUBJ;
 icond = cfg.icond;
 outpath = cfg.outpath;
+analysis = cfg.analysis;
+
 mse = [];
 
 if exist(outpath)
@@ -20,7 +22,6 @@ data = cleaned; clear cleaned
 %   cfg=[];
 %     cfg.viewmode = 'vertical';
 %     ft_databrowser(cfg, cleaned)
-
 
 % cfg=[];
 % ft_scalpcurrentdensity(cfg, data)
@@ -61,7 +62,7 @@ if ismac && plotit
   cfg.parameter = 'var';
   cfg.layout = 'EEG1005.lay';
   ft_multiplotER(cfg,timelock)
-
+  
   disp 'subtract ERP from single trials'
   data_noERP = data;
   data_noERPregress = data;
@@ -80,49 +81,93 @@ if ismac && plotit
   ft_multiplotER(cfg,  timelock_noERPregress)
 end
 
+switch analysis
+  
+  case 'mse'    
+    cfg = [];
+    cfg.m = 2;
+    cfg.r = 0.5;
+    cfg.timwin = 0.5;
+    cfg.toi = [-0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2];
+    % cfg.toi = [-0.5];
+    cfg.timescales = 1:40;
+    %     cfg.timescales = 20;
+    cfg.recompute_r = 'perscale_toi_sp';
+    cfg.coarsegrainmethod = 'filtskip';
+    cfg.filtmethod = 'lp';
+    cfg.mem_available = 40e+09;
+    cfg.allowgpu = true;
+    
+    % cfg.trials = 1:50;
+    %     mse{isub,icond} = ft_entropyanalysis(cfg, data);
+    mse = ft_entropyanalysis(cfg, data);
+    %     mse_noerp = ft_entropyanalysis(cfg, data_noERP);
+    % mse_noerpregress = ft_entropyanalysis(cfg, data_noERPregress);
+    %
+    if ismac & plotit
+      mse.freq = mse.timescales;
+      mse.powspctrm = mse.sampen;
+      mse.dimord =  'chan_freq_time';
+      %   mse_noerp.freq = mse_noerp.timescales;
+      %   mse_noerp.powspctrm = mse_noerp.sampen;
+      %   mse_noerp.dimord =  'chan_freq_time';
+      %   mse_noerpregress.freq = mse_noerpregress.timescales;
+      %   mse_noerpregress.powspctrm = mse_noerpregress.sampen;
+      %   mse_noerpregress.dimord =  'chan_freq_time';
+      %   mse_diff = mse_noerp;
+      %   mse_diff.powspctrm = mse.powspctrm - mse_noerpregress.powspctrm;
+      cfg=[];
+      cfg.layout = 'acticap-64ch-standard2.mat';
+      %     cfg.zlim = [0.8 1.2];
+      cfg.colorbar = 'yes';
+      %   cfg.baseline = [-0.5 0];
+      %       cfg.baselinetype = 'relchange';
+      %   cfg.zlim = 'maxabs';
+      %     cfg.xlim = [-0.5 1.5];
+      ft_multiplotTFR(cfg,mse)
+    end
+    
+    disp(outpath)
+    save(outpath, 'mse')
 
-cfg = [];
-cfg.m = 2;
-cfg.r = 0.5;
-cfg.timwin = 0.5;
-cfg.toi = [-0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2];
-% cfg.toi = [-0.5];
-cfg.timescales = 1:40;
-%     cfg.timescales = 20;
-cfg.recompute_r = 'perscale_toi_sp';
-cfg.coarsegrainmethod = 'filtskip';
-cfg.filtmethod = 'lp';
-cfg.mem_available = 40e+09;
-cfg.allowgpu = true;
+  case 'freq'
+    
+    cfg              = [];
+    cfg.output       = 'pow';
+    cfg.channel      = 'EEG';
+    cfg.method       = 'mtmconvol';
+    cfg.taper        = 'hanning';
+    cfg.foi          = 2:2:30;                         % analysis 2 to 30 Hz in steps of 2 Hz
+    cfg.t_ftimwin    = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec
+    cfg.toi          = -0.5:0.05:1.5;                  % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
+    freq{1} = ft_freqanalysis(cfg, data);
+    
+%     cfg=[];
+%     cfg.layout = 'EEG1005.lay';
+%     cfg.baseline = [-1 0];
+%     cfg.baselinetype = 'relchange';
+%     cfg.zlim = 'maxabs';
+%     cfg.colorbar = 'yes';
+%     ft_multiplotTFR(cfg,freq)
+    
+    cfg              = [];
+    cfg.output       = 'pow';
+    cfg.channel      = 'EEG';
+    cfg.method       = 'mtmconvol';
+    cfg.taper        = 'dpss';
+    cfg.foi          = 30:4:100;
+    cfg.tapsmofrq    = ones(length(cfg.foi),1).*4;   % length of time window = 0.5 sec
+    cfg.t_ftimwin    = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec
+    cfg.toi          = -0.5:0.05:1.5;                  % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
+    freq{2} = ft_freqanalysis(cfg, data);
+    
+    cfg=[];
+    cfg.parameter = 'powspctrm';
+    cfg.appenddim = 'freq';
+    freq = ft_appendfreq(cfg, freq{:});
+    disp(outpath)
+    save(outpath, 'freq')
 
-% cfg.trials = 1:50;
-%     mse{isub,icond} = ft_entropyanalysis(cfg, data);
-mse = ft_entropyanalysis(cfg, data);
-%     mse_noerp = ft_entropyanalysis(cfg, data_noERP);
-% mse_noerpregress = ft_entropyanalysis(cfg, data_noERPregress);
-%
-if ismac & plotit
-  mse.freq = mse.timescales;
-  mse.powspctrm = mse.sampen;
-  mse.dimord =  'chan_freq_time';
-%   mse_noerp.freq = mse_noerp.timescales;
-%   mse_noerp.powspctrm = mse_noerp.sampen;
-%   mse_noerp.dimord =  'chan_freq_time';
-%   mse_noerpregress.freq = mse_noerpregress.timescales;
-%   mse_noerpregress.powspctrm = mse_noerpregress.sampen;
-%   mse_noerpregress.dimord =  'chan_freq_time';
-%   mse_diff = mse_noerp;
-%   mse_diff.powspctrm = mse.powspctrm - mse_noerpregress.powspctrm;
-  cfg=[];
-  cfg.layout = 'acticap-64ch-standard2.mat';
-  %     cfg.zlim = [0.8 1.2];
-  cfg.colorbar = 'yes';
-%   cfg.baseline = [-0.5 0];
-%       cfg.baselinetype = 'relchange';
-%   cfg.zlim = 'maxabs';
-  %     cfg.xlim = [-0.5 1.5];
-  ft_multiplotTFR(cfg,mse)
+    
+  case 'erp'
 end
-
-disp(outpath)
-save(outpath, 'mse')
