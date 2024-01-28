@@ -34,10 +34,10 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
-cfg.analysis = 'freq'; % freq, mse, or erp
+cfg.analysis = 'erp'; % freq, mse, or erp
 mkdir(fullfile(fileparts(datapath), cfg.analysis))
 overwrite = 0;
-mkdir(fileparts(datapath), 'mse')
+mkdir(fileparts(datapath), cfg.analysis)
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
   cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
@@ -56,9 +56,9 @@ end
 fun2run = @computemMSE;
 if ismac
   cellfun(fun2run, cfglist, 'Uni', 0);
-else
-  qsubcellfun(fun2run, cfglist, 'memreq', 100e9, 'timreq', 23*60*60, 'stack', 1, ...
-    'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');  
+else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 '
+  qsubcellfun(fun2run, cfglist, 'memreq', 10e9, 'timreq', 1*60*60, 'stack', 4, ...
+    'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=1 ');  
 end
 
 %% Merge mse files across subjects and cond
@@ -150,18 +150,18 @@ ft_multiplotER(cfg,mse_merged{1:2})
 cfg=[];
 cfg.layout = lay;
 cfg.colorbar = 'yes';
-cfg.baseline = [-0.5 0];
-cfg.baselinetype = 'relchange';
+% cfg.baseline = [-0.5 0];
+% cfg.baselinetype = 'relchange';
 cfg.zlim = 'maxabs';
-ft_multiplotTFR(cfg,freq_merged{3})
-% plot freq time courses
-cfg=[];
-cfg.layout = lay;
-cfg.frequency = 6;
-cfg.baseline = [-0.5 0];
-cfg.baselinetype = 'relchange';
-cfg.zlim = 'maxabs';
-ft_multiplotER(cfg,freq_merged{1:2})
+ft_multiplotTFR(cfg,freq_merged{2})
+% % plot freq time courses
+% cfg=[];
+% cfg.layout = lay;
+% cfg.frequency = 6;
+% % cfg.baseline = [-0.5 0];
+% % cfg.baselinetype = 'relchange';
+% cfg.zlim = 'maxabs';
+% ft_multiplotER(cfg,freq_merged{1})
 %% run stats: correlation mMSE vs behavior
 cfg = []; 
 cfg.method    = 'triangulation';
@@ -211,8 +211,8 @@ cfg.colorbar = 'yes';
 cfg.zlim = 'maxabs';
 % cfg.zlim = [1.17 1.23];
 %     cfg.xlim = [-0.5 1.5];
-cfg.maskparameter = 'mask';
-corrstat.mask = double(corrstat.posclusterslabelmat == 1);
+% cfg.maskparameter = 'mask';
+% corrstat.mask = double(corrstat.posclusterslabelmat == 1);
 ft_multiplotTFR(cfg, corrstat)
 % ft_multiplotER(cfg, corrstat)
 

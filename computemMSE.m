@@ -168,6 +168,11 @@ switch analysis
     disp(outpath)
     save(outpath, 'freq')
 
-    
   case 'erp'
+    disp 'average trials'
+    cfg=[];
+    timelock= ft_timelockanalysis(cfg, data);
+    disp(outpath)
+    save(outpath, 'timelock')
+
 end
