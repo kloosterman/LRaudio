@@ -36,15 +36,14 @@ cfglist = {};
 cfg=[];
 cfg.analysis = 'mse'; % freq, mse, or erp
 cfg.evoked = 'regress'; % empty, regress, or subtract
-mkdir(fullfile(fileparts(datapath), cfg.analysis))
-overwrite = 1;
-mkdir(fileparts(datapath), cfg.analysis)
+mkdir(fullfile(fileparts(datapath), cfg.analysis, cfg.evoked))
+overwrite = 0;
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
   cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
     cfg.icond = icond;
-    cfg.outpath = fullfile(fileparts(datapath), cfg.analysis, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    cfg.outpath = fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     if overwrite || ~exist(cfg.outpath, 'file')  
       cfglist{end+1} = cfg;
     else
