@@ -7,14 +7,7 @@ SUBJ = cfg.SUBJ;
 icond = cfg.icond;
 outpath = cfg.outpath;
 analysis = cfg.analysis;
-
-mse = [];
-
-if exist(outpath)
-  disp('Output file exists')
-  load(outpath)
-  return
-end
+evoked = cfg.evoked;
 
 disp(datafile)
 load(datafile)
@@ -53,6 +46,31 @@ cfg=[];
 cfg.trials = data.trialinfo(:,8) == icond-1;
 data = ft_selectdata(cfg, data);
 
+switch evoked
+  
+  case 'regress'
+    timelock= ft_timelockanalysis([], data);
+    timelock.avg(:, timelock.time < 0) = 0;
+    timelock.avg(:, timelock.time > 1.5) = 0;  
+    disp 'regress ERP from single trials'
+    for itrial = 1:size(data.trial,2)
+      for ichan = 1:63 % TODO weigh ERP timepoints
+        [~,~,res] = regress(data.trial{itrial}(ichan,:)', [timelock.avg(ichan,:)' ones(size(timelock.avg(ichan,:)'))] );
+        figure; hold on; 
+        plot(timelock.time, data.trial{itrial}(ichan,:)'); 
+        plot(timelock.time, timelock.avg(ichan,:)'); 
+        plot(timelock.time, res);
+        legend({'raw' 'erp' 'regressed'}) 
+        data.trial{itrial}(ichan,:) = res;
+      end
+    end
+  case 'subtract TODO finish'
+%     data_noERP.trial{itrial} = data.trial{itrial} - timelock.avg;
+
+  otherwise
+    disp 'ERP not removed'
+end
+
 if ismac && plotit
   disp 'average trials'
   cfg=[];
@@ -83,7 +101,8 @@ end
 
 switch analysis
   
-  case 'mse'    
+  case 'mse'
+    mse = [];
     cfg = [];
     cfg.m = 2;
     cfg.r = 0.5;

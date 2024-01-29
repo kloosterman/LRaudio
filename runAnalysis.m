@@ -34,9 +34,10 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
-cfg.analysis = 'erp'; % freq, mse, or erp
+cfg.analysis = 'mse'; % freq, mse, or erp
+cfg.evoked = 'regress'; % empty, regress, or subtract
 mkdir(fullfile(fileparts(datapath), cfg.analysis))
-overwrite = 0;
+overwrite = 1;
 mkdir(fileparts(datapath), cfg.analysis)
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
@@ -44,7 +45,7 @@ for isub = 1:length(SUBJ)
   for icond = 1:2
     cfg.icond = icond;
     cfg.outpath = fullfile(fileparts(datapath), cfg.analysis, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    if ~exist(cfg.outpath, 'file')
+    if overwrite || ~exist(cfg.outpath, 'file')  
       cfglist{end+1} = cfg;
     else
       disp('File exists, skipping')
@@ -59,12 +60,12 @@ if ismac
 else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 '
   qsubcellfun(fun2run, cfglist, 'memreq', 10e9, 'timreq', 1*60*60, 'stack', 4, ...
     'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=1 ');  
+  return
 end
 
 %% Merge mse files across subjects and cond
-disp 'Merge mse and freq'
-mse_tmp = {};
-freq_tmp = {};
+disp 'Merge analyses'
+mse_tmp = {}; freq_tmp = {}; timelock_tmp = {};
 trialinfo = [];
 for isub = 1:length(SUBJ)
 %   datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
@@ -90,6 +91,14 @@ for isub = 1:length(SUBJ)
       cfg.baselinetype = 'relchange';
       freq = ft_freqbaseline(cfg, freq);
       freq_tmp{isub,icond} = freq;
+    else
+      disp('File not found, skipping')
+    end
+    path = fullfile(fileparts(datapath), 'erp', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    disp(path)
+    if exist(path, 'file')
+      load(path)
+      timelock_tmp{isub,icond} = timelock;
     else
       disp('File not found, skipping')
     end
@@ -128,8 +137,25 @@ freq_merged{1}.trialinfo = trialinfo(:,:,1);
 freq_merged{2}.trialinfo = trialinfo(:,:,2);
 freq_merged{3}.trialinfo = mean(trialinfo, 3);
 freq_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
+%% combine timelock 
+cfg=[];
+cfg.keepindividual = 'yes';
+timelock_merged{1} = ft_timelockgrandaverage(cfg, timelock_tmp{:,1});
+timelock_merged{2} = ft_timelockgrandaverage(cfg, timelock_tmp{:,2});
+cfg.keepindividual = 'no';
+cfg.parameter = 'individual';
+timelock_merged{3} = ft_timelockgrandaverage(cfg, timelock_merged{1:2});
+cfg=[];
+cfg.operation = 'subtract';
+cfg.parameter = 'individual';
+timelock_merged{4} = ft_math(cfg, timelock_merged{1}, timelock_merged{2});
+% add behavior
+timelock_merged{1}.trialinfo = trialinfo(:,:,1);
+timelock_merged{2}.trialinfo = trialinfo(:,:,2);
+timelock_merged{3}.trialinfo = mean(trialinfo, 3);
+timelock_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
 
-%% plot mse
+%% plot time courses
 cfg=[];
 cfg.layout = lay;
 %     cfg.zlim = [0.8 1.2];
@@ -140,11 +166,11 @@ cfg.colorbar = 'yes';
 cfg.zlim = [1.17 1.23];
 %     cfg.xlim = [-0.5 1.5];
 ft_multiplotTFR(cfg,mse_merged{3})
-% plot mMSE time courses
+%% plot mMSE time courses
 cfg=[];
 cfg.layout = lay;
-cfg.frequency = 80;
-ft_multiplotER(cfg,mse_merged{1:2})
+% cfg.frequency = 80;
+ft_multiplotER(cfg,timelock_merged{1:2})
 
 %% plot freq
 cfg=[];
