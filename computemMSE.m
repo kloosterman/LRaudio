@@ -56,11 +56,11 @@ switch evoked
     for itrial = 1:size(data.trial,2)
       for ichan = 1:63 % TODO weigh ERP timepoints
         [~,~,res] = regress(data.trial{itrial}(ichan,:)', [timelock.avg(ichan,:)' ones(size(timelock.avg(ichan,:)'))] );
-        figure; hold on; 
-        plot(timelock.time, data.trial{itrial}(ichan,:)'); 
-        plot(timelock.time, timelock.avg(ichan,:)'); 
-        plot(timelock.time, res);
-        legend({'raw' 'erp' 'regressed'}) 
+%         figure; hold on; 
+%         plot(timelock.time, data.trial{itrial}(ichan,:)'); 
+%         plot(timelock.time, timelock.avg(ichan,:)'); 
+%         plot(timelock.time, res);
+%         legend({'raw' 'erp' 'regressed'}) 
         data.trial{itrial}(ichan,:) = res;
       end
     end
