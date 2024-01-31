@@ -34,7 +34,7 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
-cfg.analysis = 'mse'; % freq, mse, or erp
+cfg.analysis = 'freq'; % freq, mse, or erp
 cfg.evoked = 'regress'; % empty, regress, or subtract
 mkdir(fullfile(fileparts(datapath), cfg.analysis, cfg.evoked))
 overwrite = 0;
@@ -69,7 +69,7 @@ trialinfo = [];
 for isub = 1:length(SUBJ)
 %   datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
-    path = fullfile(fileparts(datapath), 'mse', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'mse', 'regress', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -85,10 +85,10 @@ for isub = 1:length(SUBJ)
     disp(path)
     if exist(path, 'file')
       load(path)
-      cfg=[];
-      cfg.baseline = [-0.5 0];
-      cfg.baselinetype = 'relchange';
-      freq = ft_freqbaseline(cfg, freq);
+%       cfg=[];
+%       cfg.baseline = [-0.5 0];
+%       cfg.baselinetype = 'relchange';
+%       freq = ft_freqbaseline(cfg, freq);
       freq_tmp{isub,icond} = freq;
     else
       disp('File not found, skipping')
@@ -168,8 +168,10 @@ ft_multiplotTFR(cfg,mse_merged{3})
 %% plot mMSE time courses
 cfg=[];
 cfg.layout = lay;
-% cfg.frequency = 80;
-ft_multiplotER(cfg,timelock_merged{1:2})
+cfg.frequency = [60 80 ];
+cfg.baseline = [-0.5 0];
+cfg.baselinetype = 'relchange';
+ft_multiplotER(cfg,mse_merged{4})
 
 %% plot freq
 cfg=[];
@@ -221,7 +223,7 @@ cfg.numrandomization = 100;
 cfg.neighbours       = neighbours;
 % cfg.minnbchan        = 0;
 cfg.spmversion = 'spm12';
-corrstat = ft_freqstatistics(cfg, freq_merged{4}); % incong - cong
+corrstat = ft_freqstatistics(cfg, mse_merged{4}); % incong - cong
 
 %% plot 
 cfg=[];
@@ -243,9 +245,10 @@ ft_multiplotTFR(cfg, corrstat)
 
 %% get data for scatter
 cfg=[];
-cfg.latency = [0.25 0.4];
-% cfg.latency = [1 1];
-cfg.frequency = [70.027211 142.952381];
+% cfg.latency = [0.25 0.4];
+% cfg.frequency = [70.027211 142.952381];
+cfg.latency = [0.5];
+cfg.frequency = [50 100];
 % cfg.channel = {'FC1' 'FC3' 'FCz'};
 cfg.channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
 cfg.avgoverchan = 'yes';
