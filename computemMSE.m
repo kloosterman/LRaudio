@@ -8,6 +8,7 @@ icond = cfg.icond;
 outpath = cfg.outpath;
 analysis = cfg.analysis;
 evoked = cfg.evoked;
+csd = cfg.csd;
 
 disp(datafile)
 load(datafile)
@@ -16,10 +17,21 @@ data = cleaned; clear cleaned
 %     cfg.viewmode = 'vertical';
 %     ft_databrowser(cfg, cleaned)
 
-% cfg=[];
-% ft_scalpcurrentdensity(cfg, data)
+switch csd
+  case 'csd'
+    cfg=[];
+    cfg.method = 'spline';
+    cfg.elec = 'standard_1020.elc';
+    data = ft_scalpcurrentdensity(cfg, data);
+end
 
-
+if plotit
+  load('acticap-64ch-standard2.mat')
+  lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
+  cfg = [];
+  cfg.layout = lay;
+  ft_multiplotER(cfg, data, scd)
+end
 
 
 disp 'select valid trials...'

@@ -34,16 +34,17 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
-cfg.analysis = 'freq'; % freq, mse, or erp
+cfg.analysis = 'mse'; % freq, mse, or erp
 cfg.evoked = 'regress'; % empty, regress, or subtract
-mkdir(fullfile(fileparts(datapath), cfg.analysis, cfg.evoked))
-overwrite = 0;
+cfg.csd = 'csd'; % empty or csd
+mkdir(fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, cfg.csd))
+overwrite = 1;
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
   cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
     cfg.icond = icond;
-    cfg.outpath = fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    cfg.outpath = fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, cfg.csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     if overwrite || ~exist(cfg.outpath, 'file')  
       cfglist{end+1} = cfg;
     else
@@ -85,10 +86,10 @@ for isub = 1:length(SUBJ)
     disp(path)
     if exist(path, 'file')
       load(path)
-%       cfg=[];
-%       cfg.baseline = [-0.5 0];
-%       cfg.baselinetype = 'relchange';
-%       freq = ft_freqbaseline(cfg, freq);
+      cfg=[];
+      cfg.baseline = [-0.5 0];
+      cfg.baselinetype = 'relchange';
+      freq = ft_freqbaseline(cfg, freq);
       freq_tmp{isub,icond} = freq;
     else
       disp('File not found, skipping')
@@ -154,24 +155,26 @@ timelock_merged{2}.trialinfo = trialinfo(:,:,2);
 timelock_merged{3}.trialinfo = mean(trialinfo, 3);
 timelock_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
 
-%% plot time courses
+%% plot TFR
 cfg=[];
 cfg.layout = lay;
 %     cfg.zlim = [0.8 1.2];
 cfg.colorbar = 'yes';
 % cfg.baseline = [-0.5 0];
 % cfg.baselinetype = 'relchange';
-% cfg.zlim = 'maxabs';
-cfg.zlim = [1.17 1.23];
+cfg.zlim = 'maxabs';
+% cfg.zlim = [1.17 1.23];
 %     cfg.xlim = [-0.5 1.5];
-ft_multiplotTFR(cfg,mse_merged{3})
-%% plot mMSE time courses
+% ft_multiplotTFR(cfg,mse_merged{3})
+ft_multiplotTFR(cfg,freq_merged{3})
+%% plot time courses
 cfg=[];
 cfg.layout = lay;
-cfg.frequency = [60 80 ];
-cfg.baseline = [-0.5 0];
-cfg.baselinetype = 'relchange';
-ft_multiplotER(cfg,mse_merged{4})
+cfg.frequency = [10 20 ];
+% cfg.baseline = [-0.5 0];
+% cfg.baselinetype = 'relchange';
+% ft_multiplotER(cfg,mse_merged{4})
+ft_multiplotER(cfg,freq_merged{1:2})
 
 %% plot freq
 cfg=[];
