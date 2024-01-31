@@ -34,7 +34,7 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
-cfg.analysis = 'mse'; % freq, mse, or erp
+cfg.analysis = 'freq'; % freq, mse, or erp
 cfg.evoked = 'regress'; % empty, regress, or subtract
 cfg.csd = 'csd'; % empty or csd
 mkdir(fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, cfg.csd))
@@ -58,7 +58,7 @@ fun2run = @computemMSE;
 if ismac
   cellfun(fun2run, cfglist, 'Uni', 0);
 else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 '
-  qsubcellfun(fun2run, cfglist, 'memreq', 100e9, 'timreq', 23*60*60, 'stack', 1, ...
+  qsubcellfun(fun2run, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
     'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');  
   return
 end
