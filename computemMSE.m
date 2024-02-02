@@ -168,36 +168,43 @@ switch analysis
     cfg.channel      = 'EEG';
     cfg.method       = 'mtmconvol';
     cfg.taper        = 'hanning';
-    cfg.foi          = 2:1:30;                         % analysis 2 to 30 Hz in steps of 2 Hz
+    cfg.foi          = logspace(0, 1.5, 30); %2:1:30;                         % analysis 2 to 30 Hz in steps of 2 Hz
     cfg.t_ftimwin    = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec
-    cfg.toi          = -0.5:0.05:1.5;                  % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
+    cfg.toi          = -0.5:0.05:2;                  % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
     freq{1} = ft_freqanalysis(cfg, data);
-    
-%     cfg=[];
-%     cfg.layout = 'EEG1005.lay';
-%     cfg.baseline = [-1 0];
-%     cfg.baselinetype = 'relchange';
-%     cfg.zlim = 'maxabs';
-%     cfg.colorbar = 'yes';
-%     ft_multiplotTFR(cfg,freq)
-    
+        
     cfg              = [];
     cfg.output       = 'pow';
     cfg.channel      = 'EEG';
     cfg.method       = 'mtmconvol';
     cfg.taper        = 'dpss';
-    cfg.foi          = 30:4:100;
+    cfg.foi          = logspace( 1.5, 2, 10); % 30:4:100;
     cfg.tapsmofrq    = ones(length(cfg.foi),1).*4;   % length of time window = 0.5 sec
     cfg.t_ftimwin    = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec
-    cfg.toi          = -0.5:0.05:1.5;                  % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
+    cfg.toi          = -0.5:0.05:2;                  % time window "slides" from -0.5 to 1.5 sec in steps of 0.05 sec (50 ms)
     freq{2} = ft_freqanalysis(cfg, data);
     
     cfg=[];
     cfg.parameter = 'powspctrm';
     cfg.appenddim = 'freq';
     freq = ft_appendfreq(cfg, freq{:});
+    
+    cfg=[];
+    cfg.baseline = [-0.5 0];
+    cfg.baselinetype = 'relchange';
+    freq_bl = ft_freqbaseline(cfg, freq);
+
+    if ismac & plotit
+      load('acticap-64ch-standard2.mat')
+      lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
+      cfg=[];
+      cfg.layout = lay;
+      cfg.zlim = 'maxabs';
+      ft_multiplotTFR(cfg,freq_bl); colorbar
+    end
+    
     disp(outpath)
-    save(outpath, 'freq')
+    save(outpath, 'freq', 'freq_bl')
 
   case 'erp'
     disp 'average trials'
