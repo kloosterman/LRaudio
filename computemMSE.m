@@ -19,7 +19,7 @@ switch sensor_or_source
   case 'source'
     data = {};
     list = dir(datafile);
-    for i = 1:2 %length(list)
+    for i = 1:length(list)
       disp(fullfile(list(i).folder, list(i).name))
       load(fullfile(list(i).folder, list(i).name))
       ntrials = size(sourcedata.trialinfo,1);
