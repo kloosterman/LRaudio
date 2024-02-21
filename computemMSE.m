@@ -9,13 +9,31 @@ outpath = cfg.outpath;
 analysis = cfg.analysis;
 evoked = cfg.evoked;
 csd = cfg.csd;
+sensor_or_source = cfg.sensor_or_source;
 
-disp(datafile)
-load(datafile)
-data = cleaned; clear cleaned
+switch sensor_or_source
+  case 'sensor'
+    disp(datafile)
+    load(datafile)
+    data = cleaned; clear cleaned
+  case 'source'
+    data = {};
+    list = dir(datafile);
+    for i = 1:2 %length(list)
+      disp(fullfile(list(i).folder, list(i).name))
+      load(fullfile(list(i).folder, list(i).name))
+      ntrials = size(sourcedata.trialinfo,1);
+      sourcedata.trial = mat2cell(sourcedata.trial, ones(ntrials,1));
+      sourcedata.trial = cellfun(@squeeze, sourcedata.trial, 'Uni', 0)';
+      removefields(sourcedata, {'dimord'}); %  'sampleinfo'
+      data{i} = sourcedata;   clear sourcedata
+    end
+    cfg = []; 
+    data = ft_appenddata(cfg, data{:});
+end
 %   cfg=[];
 %     cfg.viewmode = 'vertical';
-%     ft_databrowser(cfg, cleaned)
+%     ft_databrowser(cfg, data)
 
 switch csd
   case 'csd'
@@ -121,8 +139,8 @@ switch analysis
     cfg.timwin = 0.5;
     cfg.toi = [-0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2];
     % cfg.toi = [-0.5];
-    cfg.timescales = 1:40;
-    %     cfg.timescales = 20;
+%     cfg.timescales = 1:40;
+        cfg.timescales = 10:30;
     cfg.recompute_r = 'perscale_toi_sp';
     cfg.coarsegrainmethod = 'filtskip';
     cfg.filtmethod = 'lp';

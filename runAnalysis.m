@@ -1,9 +1,11 @@
 if ismac
 %   datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
-  datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
+%   datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
+  datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/source';
   toolspath = '/Users/kloosterman/Documents/GitHub/';
 else
-  datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
+%   datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
+  datapath = '/home/mpib/kloosterman/projectdata/LRaudio/source';
   toolspath = '/home/mpib/kloosterman/GitHub/';
 end
 
@@ -16,13 +18,13 @@ addpath(fullfile(toolspath, 'qsub-tardis'))
 outputpath = fullfile(fileparts(datapath), 'outputdata');
 mkdir(outputpath)
 
-%% make eeg layout
+% make eeg layout
 load('acticap-64ch-standard2.mat')
 lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
 
-%% define subjects
+% define subjects
 SUBJ={};
-for i=1:36
+for i=1%:36
   SUBJ{end+1} = sprintf('%d', i);
 end
 SUBJbool = true(size(SUBJ));
@@ -34,31 +36,42 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
-cfg.analysis = 'freq'; % freq, mse, or erp
-cfg.evoked = 'regress'; % empty, regress, or subtract
-cfg.csd = 'csd'; % empty or csd
+cfg.analysis = 'mse'; % freq, mse, or erp
+cfg.evoked = ''; % empty, regress, or subtract
+cfg.csd = ''; % empty or csd
+cfg.sensor_or_source = 'source';
 mkdir(fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, cfg.csd))
 overwrite = 1;
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
-  cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
     cfg.icond = icond;
-    cfg.outpath = fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, cfg.csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    if overwrite || ~exist(cfg.outpath, 'file')  
+    switch cfg.sensor_or_source
+      case 'sensor'
+        cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
+        cfg.outpath = fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, cfg.csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+      case 'source'
+        cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('SourceTimeSeries_BW_1-100Hz_ParcelSpace_Block*.mat'));
+        cfg.outpath = fullfile(datapath, cfg.analysis, cfg.evoked, cfg.csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    end
+    if overwrite || ~exist(cfg.outpath, 'file')
       cfglist{end+1} = cfg;
     else
       disp('File exists, skipping')
     end
-  end      
+  end
 end
 
-% submit to tardis, or run locally
-if ismac
+if ismac % submit to tardis, or run locally
   cellfun(@computemMSE, cfglist, 'Uni', 0);
 else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 '
-  qsubcellfun(@computemMSE, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
-    'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');  
+  if strcmp(cfg.analysis, 'mse')
+    qsubcellfun(@computemMSE, cfglist, 'memreq', 100e9, 'timreq', 23*60*60, 'stack', 1, ...
+      'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');
+  else
+    qsubcellfun(@computemMSE, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
+      'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');
+  end
   return
 end
 
@@ -69,7 +82,8 @@ trialinfo = [];
 for isub = 1:length(SUBJ)
 %   datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
-    path = fullfile(fileparts(datapath), 'mse', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+%     path = fullfile(fileparts(datapath), 'mse', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'mse', 'regress', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -81,15 +95,12 @@ for isub = 1:length(SUBJ)
     else
       disp('File not found, skipping')
     end
-    path = fullfile(fileparts(datapath), 'freq', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+%     path = fullfile(fileparts(datapath), 'freq', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'freq', 'regress', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
-%       cfg=[];
-%       cfg.baseline = [-0.5 0];
-%       cfg.baselinetype = 'relchange';
-%       freq = ft_freqbaseline(cfg, freq);
-      freq_tmp{isub,icond} = freq_bl;
+      freq_tmp{isub,icond} = freq; % freq_bl or raw: freq
     else
       disp('File not found, skipping')
     end
@@ -181,7 +192,7 @@ cfg.zlim = [1.17 1.23];
 subplot(2,3,1);     ft_singleplotTFR(cfg, mse_merged{3});
 
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';
-cfg.xlim = xlim;   cfg.ylim = [4 4];   
+cfg.xlim = xlim;   cfg.ylim = [50 100];   
 % cfg.zlim = [1.17 1.23]; cfg.highlightchannel = channel;
 subplot(2,3,2);     ft_topoplotTFR(cfg, mse_merged{3}); colorbar
 
@@ -248,13 +259,13 @@ ft_multiplotTFR(cfg, corrstat)
 
 %% get data for scatter
 cfg=[];
-% cfg.latency = [0.25 0.4];
-cfg.latency = [0.75 1.25];
+cfg.latency = [0.1 0.4];
+% cfg.latency = [0.75 1.25];
 cfg.frequency = [70.027211 142.952381];
 % cfg.latency = [0.5];
 % cfg.frequency = [2 8];
-cfg.channel = {'C3', 'CP3', 'P3'};
-% cfg.channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
+% cfg.channel = {'C3', 'CP3', 'P3'};
+cfg.channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
 % cfg.channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C2', 'Cz', 'C1', 'C3', 'CP3', 'CP1', 'CPz', 'CP2'};
 cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
 corrdat = ft_selectdata(cfg, mse_merged{4});
