@@ -40,11 +40,10 @@ cfg.analysis = 'mse'; % freq, mse, or erp
 cfg.evoked = ''; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'source';
-mkdir(fullfile(fileparts(datapath), cfg.analysis, cfg.evoked, cfg.csd))
 overwrite = 1;
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
-  for icond = 1:2
+  for icond = 2 %1:2
     cfg.icond = icond;
     switch cfg.sensor_or_source
       case 'sensor'
@@ -53,8 +52,9 @@ for isub = 1:length(SUBJ)
       case 'source'
         cfg.datafile = fullfile(datapath, SUBJ{isub}, sprintf('SourceTimeSeries_BW_1-100Hz_ParcelSpace_Block*.mat'));
         cfg.outpath = fullfile(datapath, cfg.analysis, cfg.evoked, cfg.csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    end
+    end    
     if overwrite || ~exist(cfg.outpath, 'file')
+      mkdir(fileparts(cfg.outpath))
       cfglist{end+1} = cfg;
     else
       disp('File exists, skipping')
