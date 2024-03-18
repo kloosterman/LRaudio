@@ -36,7 +36,7 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
-cfg.analysis = 'mse'; % freq, mse, or erp
+cfg.analysis = 'freq'; % freq, mse, or erp
 cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
