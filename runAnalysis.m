@@ -1,11 +1,11 @@
 if ismac
 %   datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
-%   datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
-  datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/source';
+  datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
+%   datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/source';
   toolspath = '/Users/kloosterman/Documents/GitHub/';
 else
-%   datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
-  datapath = '/home/mpib/kloosterman/projectdata/LRaudio/source';
+  datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
+%   datapath = '/home/mpib/kloosterman/projectdata/LRaudio/source';
   toolspath = '/home/mpib/kloosterman/GitHub/';
 end
 
@@ -24,7 +24,7 @@ lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
 
 % define subjects
 SUBJ={};
-for i=1%:36
+for i=1:36
   SUBJ{end+1} = sprintf('%d', i);
 end
 SUBJbool = true(size(SUBJ));
@@ -37,13 +37,13 @@ disp(SUBJ)
 cfglist = {};
 cfg=[];
 cfg.analysis = 'mse'; % freq, mse, or erp
-cfg.evoked = ''; % empty, regress, or subtract
+cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
-cfg.sensor_or_source = 'source';
+cfg.sensor_or_source = 'sensor';
 overwrite = 1;
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
-  for icond = 2 %1:2
+  for icond = 1:2
     cfg.icond = icond;
     switch cfg.sensor_or_source
       case 'sensor'
@@ -83,7 +83,7 @@ for isub = 1:length(SUBJ)
 %   datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
 %     path = fullfile(fileparts(datapath), 'mse', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'mse', 'regress', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'mse', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -96,7 +96,7 @@ for isub = 1:length(SUBJ)
       disp('File not found, skipping')
     end
 %     path = fullfile(fileparts(datapath), 'freq', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'freq', 'regress', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'freq', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -179,8 +179,10 @@ cfg.frequency = [4 8 ];
 ft_multiplotER(cfg,freq_merged{1:2})
 
 %% plot Central pooling mse 
+close all
 xlim = [0.75 1.25];
-channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
+channel = {'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'C2', 'Cz', 'C1', 'C3', 'F3', 'F1'};
+% channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
 % channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C2', 'Cz', 'C1', 'C3', 'CP3', 'CP1', 'CPz', 'CP2'};
 % channel = {'C3', 'CP3', 'P3'};
 
@@ -193,7 +195,8 @@ subplot(2,3,1);     ft_singleplotTFR(cfg, mse_merged{3});
 
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';
 cfg.xlim = xlim;   cfg.ylim = [50 100];   
-% cfg.zlim = [1.17 1.23]; cfg.highlightchannel = channel;
+cfg.highlightchannel = channel; cfg.highlight = 'on';
+% cfg.zlim = [1.17 1.23]; 
 subplot(2,3,2);     ft_topoplotTFR(cfg, mse_merged{3}); colorbar
 
 cfg=[];    cfg.figure = 'gcf';  cfg.channel = channel;
@@ -225,7 +228,9 @@ neighbours       = ft_prepare_neighbours(cfg);
 
 cfg = []; 
 cfg.design = mse_merged{4}.trialinfo(:,3); % 3 is accuracy
-% cfg.frequency = 80;
+cfg.frequency = [60 120];
+cfg.avgoverfreq = 'yes';
+% cfg.latency = [-0.5 1.5];
 cfg.latency = [-0.5 1.5];
 cfg.uvar     = [];
 cfg.ivar     = 1;
@@ -265,13 +270,14 @@ cfg.frequency = [70.027211 142.952381];
 % cfg.latency = [0.5];
 % cfg.frequency = [2 8];
 % cfg.channel = {'C3', 'CP3', 'P3'};
-cfg.channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
+% cfg.channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
 % cfg.channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C2', 'Cz', 'C1', 'C3', 'CP3', 'CP1', 'CPz', 'CP2'};
+cfg.channel = channel;
 cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
 corrdat = ft_selectdata(cfg, mse_merged{4});
 figure; scatter(corrdat.powspctrm , mse_merged{4}.trialinfo(:,3), 100, 'MarkerEdgeColor',[1 1 1],...
   'MarkerFaceColor',[0 0 0], 'LineWidth',1.5);
 xlabel('Incongruent–congruent mMSE');    ylabel('Incongruent–congruent Accuracy')
-[rho, p] = corr(corrdat.powspctrm , mse_merged{4}.trialinfo(:,3), 'type', 'Spearman');
+[rho, p] = corr(corrdat.powspctrm , mse_merged{4}.trialinfo(:,3), 'type', 'Pearson');
 title(sprintf('r = %.2f, p = %g', rho, p));
 lsline; box on; axis square

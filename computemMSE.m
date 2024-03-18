@@ -94,9 +94,11 @@ switch evoked
         data.trial{itrial}(ichan,:) = res;
       end
     end
-  case 'subtract TODO finish'
-%     data_noERP.trial{itrial} = data.trial{itrial} - timelock.avg;
-
+  case 'subtract'
+    timelock= ft_timelockanalysis([], data);
+    for itrial = 1:size(data.trial,2)
+      data.trial{itrial} = data.trial{itrial} - timelock.avg;
+    end
   otherwise
     disp 'ERP not removed'
 end
