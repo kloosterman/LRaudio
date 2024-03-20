@@ -1,11 +1,11 @@
 if ismac
 %   datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
-  datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
-%   datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/source';
+%   datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
+  datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/source';
   toolspath = '/Users/kloosterman/Documents/GitHub/';
 else
-  datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
-%   datapath = '/home/mpib/kloosterman/projectdata/LRaudio/source';
+%   datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
+  datapath = '/home/mpib/kloosterman/projectdata/LRaudio/source';
   toolspath = '/home/mpib/kloosterman/GitHub/';
 end
 
@@ -25,7 +25,7 @@ lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
 
 % define subjects
 SUBJ={};
-for i=1:36
+for i=1%:36
   SUBJ{end+1} = sprintf('%d', i);
 end
 SUBJbool = true(size(SUBJ));
@@ -37,7 +37,7 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 cfglist = {};
 cfg=[];
-cfg.analysis = 'freq'; % freq, mse, or erp
+cfg.analysis = 'mse'; % freq, mse, or erp
 cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'source';
