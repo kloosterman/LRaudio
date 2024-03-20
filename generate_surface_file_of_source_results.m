@@ -19,17 +19,18 @@ close all
 
 disp('   *** Generating surface file of source results ... ')
 
-HomeDIR         = 'INSERT PATH';
-DataDIR         = 'INSERT PATH';
-GiftiDIR        = 'INSERT PATH, FOR EXAMPLE: D:/fieldtrip-master/external/gifti';
-FieldTripDIR    = 'INSERT PATH, FOR EXAMPLE: D:/fieldtrip-master';
-ParcellationDIR = 'INSERT PATH, FOR EXAMPLE: D:/my project/Parcellation';
-DestinDIR       = 'INSERT PATH';
+% HomeDIR         = 'INSERT PATH';
+DataDIR         = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/source/mse/subtract';
+GiftiDIR        = '/Users/kloosterman/Documents/GitHub/fieldtrip/external/gifti';
+FieldTripDIR    = '/Users/kloosterman/Documents/GitHub/fieldtrip/';
+ParcellationDIR = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/Parcellation';
+DestinDIR       = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/Parcellation/output';
 
-addpath(genpath(HomeDIR))
+% addpath(genpath(HomeDIR))
 addpath(GiftiDIR)
-addpath(FieldTripDIR)
-ft_defaults
+% addpath(FieldTripDIR)
+% ft_defaults
+ft_hastoolbox('spm12',1)
 
 % Information about the parcellation
 no_of_nodes = 362;
@@ -42,22 +43,34 @@ R_Front = [190,191,192,206,224,237,238,239,240,241,242,243,244,245,246,247,248,2
 
 % LH
 L_Occi  = R_Occi -180; 
-L_Pari  = L_Pari -180;
-L_Temp  = L_Temp -180;
-L_Front = L_Front -180;
+L_Pari  = R_Pari -180;
+L_Temp  = R_Temp -180;
+L_Front = R_Front -180;
 
 %% (2) Source analysis and / or statistical analysis
 %  -------------------------------------------------
 % In section 3 it is assumed that the final results of the source
 % analysis implemented in section 2 is saved in the variable S (size(S): no_of_nodes x 1)
+load /Users/kloosterman/gridmaster2012/projectdata/LRaudio/source/mse/subtract/SUB1_cond1.mat
+mse.freq = mse.timescales;
+% mse.powspctrm = mse.sampen;
+mse.dimord = 'chan_freq_time';
+
+cfg=[];
+cfg.latency=[0.1 0.5]; cfg.avgovertime = 'yes';
+mse_sel = ft_selectdata(cfg, mse);
+
+S=mse_sel.sampen;
+
 
 %% (3) Surface visualization of source results
 % --------------------------------------------
 outdir      = DestinDIR;
+mkdir(outdir)
 outfilename = 'RESULTS.32k_fs_LR.dlabel.nii'; % Only adapt RESULTS as you wish, keep the file suffix as it is.
 
-addpath(FieldTripDIR)
-ft_defaults
+% addpath(FieldTripDIR)
+% ft_defaults
 
 disp('   *** Surface generation of source results ... ')
 disp('   *** Reading the CIFTI file of parcellation labels ... ')
