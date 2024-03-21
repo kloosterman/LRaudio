@@ -80,7 +80,6 @@ for isub = 1:length(SUBJ)
     disp(path)
     if exist(path, 'file')
       load(path)
-%       mse.time = mse.time-0.46;
       mse.freq = mse.timescales;
       mse.powspctrm = mse.sampen;
       mse.dimord = 'chan_freq_time';
@@ -94,16 +93,14 @@ for isub = 1:length(SUBJ)
     disp(path)
     if exist(path, 'file')
       load(path)
-%       freq_bl.time = freq_bl.time-0.46;
       freq_tmp{isub,icond} = freq_bl; % freq_bl (baseline corrected) freq (raw power)
     else
       disp('File not found, skipping')
     end
-    path = fullfile(fileparts(datapath), 'erp', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'timelock', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
-%       timelock.time = timelock.time-0.46;
       timelock_tmp{isub,icond} = timelock;
     else
       disp('File not found, skipping')

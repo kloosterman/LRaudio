@@ -88,6 +88,13 @@ cfg=[];
 cfg.trials = data.trialinfo(:,8) == icond-1;
 data = ft_selectdata(cfg, data);
 
+% erp analysis
+timelock= ft_timelockanalysis([], data);
+outpath = fullfile(fileparts(datapath), 'timelock', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ, icond));
+mkdir(fileparts(outpath))
+disp(outpath)
+save(outpath, 'timelock')
+
 switch evoked
   case 'regress'
     timelock= ft_timelockanalysis([], data);
@@ -141,13 +148,6 @@ if ismac && plotit
   cfg.layout = 'EEG1005.lay';
   ft_multiplotER(cfg,  timelock_noERPregress)
 end
-
-% erp analysis
-timelock= ft_timelockanalysis([], data);
-outpath = fullfile(fileparts(datapath), 'timelock', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ, icond));
-mkdir(fileparts(outpath))
-disp(outpath)
-save(outpath, 'timelock')
 
 %freqanalysis
 cfg              = [];
