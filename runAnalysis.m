@@ -59,11 +59,11 @@ if ismac % submit to tardis, or run locally
   cellfun(@computemMSE, cfglist, 'Uni', 0);
 else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 '
 %   if strcmp(cfg.analysis, 'mse')
-%     qsubcellfun(@computemMSE, cfglist, 'memreq', 100e9, 'timreq', 46*60*60, 'stack', 1, ...
-%       'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 --partition long');
+    qsubcellfun(@computemMSE, cfglist, 'memreq', 100e9, 'timreq', 46*60*60, 'stack', 1, ...
+      'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 --partition long');
 %   else
-    qsubcellfun(@computemMSE, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
-      'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');
+%     qsubcellfun(@computemMSE, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
+%       'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');
 %   end
   return
 end
