@@ -16,6 +16,7 @@ addpath(fullfile(toolspath, 'mMSE'));
 addpath(fullfile(toolspath, 'LRaudio'))
 addpath(fullfile(toolspath, 'qsub-tardis'))
 addpath(genpath(fullfile(toolspath, 'BrainSlicer')))
+plotpath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/plots';
 
 % make eeg layout
 load('acticap-64ch-standard2.mat')
@@ -36,7 +37,7 @@ disp(SUBJ)
 overwrite = 1;
 cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
-cfg.csd = ''; % empty or csd
+cfg.csd = 'csd'; % empty or csd
 cfg.sensor_or_source = 'sensor';
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
@@ -114,6 +115,7 @@ mse_merged{1} = ft_freqgrandaverage(cfg, mse_tmp{:,1});
 mse_merged{2} = ft_freqgrandaverage(cfg, mse_tmp{:,2});
 cfg.keepindividual = 'no';
 mse_merged{3} = ft_freqgrandaverage(cfg, mse_merged{1:2});
+
 cfg=[];
 cfg.operation = 'subtract';
 cfg.parameter = 'powspctrm';
@@ -169,7 +171,7 @@ cfg.zlim = 'maxabs';
 % cfg.zlim = [1.17 1.23];
 % cfg.xlim = [-0.5 1.5];
 % cfg.baseline = [-0.5 0];    cfg.baselinetype = 'relchange';
-ft_multiplotTFR(cfg, freq_merged{4}); colorbar
+ft_multiplotTFR(cfg, freq_merged{3}); colorbar
 %% plot time courses
 cfg=[];   cfg.layout = lay;
 cfg.frequency = [4 8 ];
@@ -189,7 +191,7 @@ cfg.channel = channel;  cfg.zlim = [1.17 1.23]; cfg.title = 'Entropy';
 subplot(2,3,1);     ft_singleplotTFR(cfg, mse_merged{3}); xline(0); xlabel('Time from stim (s)'); ylabel('Time scale (ms)')
 
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';
-cfg.xlim = [0.1 0.5];   cfg.ylim = [50 100];   % cfg.zlim = [1.17 1.23];
+cfg.xlim = [0 0.2];   cfg.ylim = [60 100];   cfg.zlim = [1.17 1.22];
 cfg.highlightchannel = channel; cfg.highlight = 'on';
 subplot(2,3,2);     ft_topoplotTFR(cfg, mse_merged{3}); %colorbar
 
@@ -201,87 +203,110 @@ xlabel('Time from stim (s)'); ylabel('Entropy')
 
 % plot Central pooling freq
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';   cfg.channel = channel;
-cfg.ylim = [0 20]; cfg.zlim = [-0.2 0.2]; cfg.title = 'Power';
+cfg.ylim = [0 20]; cfg.zlim = [-0.17 0.17]; cfg.title = 'Power modulation';
 subplot(2,3,4); ft_singleplotTFR(cfg, freq_merged{3}); xline(0); xlabel('Time from stim (s)'); ylabel('Frequency (Hz)')
 
 cfg=[]; cfg.layout = lay;   cfg.figure = 'gcf'; %cfg.colormap = colormaps(2);
-cfg.xlim = [0.1 0.5];   cfg.ylim = [2 8];    cfg.zlim = 'maxabs';
+cfg.xlim = [0 0.2];   cfg.ylim = [4 8];    cfg.zlim = 'maxabs';
 subplot(2,3,5); ft_topoplotTFR(cfg, freq_merged{3}); %colorbar;
 
-cfg=[]; cfg.figure = 'gcf'; cfg.channel = channel; cfg.title = ' ';  cfg.frequency = [2 8]; % cfg.showlegend = 'yes'; cfg.dataname = {'Incong.', 'Cong.'};
+cfg=[]; cfg.figure = 'gcf'; cfg.channel = channel; cfg.title = ' ';  cfg.frequency = [4 8]; % cfg.showlegend = 'yes'; cfg.dataname = {'Incong.', 'Cong.'};
 subplot(2,3,6); cfg = ft_singleplotER(cfg, freq_merged{1:2});
 xline(0,'HandleVisibility','off'); % legend({'Incong.', 'Cong.'}, 'Location', 'Southeast'); legend boxoff
-xlabel('Time from stim (s)'); ylabel('Power (psc)'); % %shg
+xlabel('Time from stim (s)'); ylabel('Power (% signal change)'); % %shg
 
-plotpath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/plots';
 orient landscape
 saveas(f, fullfile(plotpath, ['msevsfreq_' [channel{:}]]), 'pdf')
 saveas(f, fullfile(plotpath, ['msevsfreq_' [channel{:}]]), 'png')
 
 %% run stats: correlation mMSE vs behavior
+behav_col=3;% 3 is accuracy,6 is delta_fsemitones
+corrtype='Pearson'; % Spearman Pearson
+% corrtype='Spearman'; % Spearman Pearson
 cond_leg = {'Incong.', 'Congr.', 'Cong. avg', 'Incong–Congr.'};
 colors = {'r' 'b' 'g'};
-corrtype='Pearson'; % Spearman Pearson
-clear pl; f=figure; f.Position = [  350   250   400   400];
-for icond = 1:4
-  cfg = []; cfg.method = 'triangulation'; cfg.layout = lay;
-  neighbours = ft_prepare_neighbours(cfg); % cfg.neighbours = neighbours; ft_neighbourplot(cfg)
+ctrl_band = [1 3]; % 4 8
+cfg = []; cfg.method = 'triangulation'; cfg.layout = lay;
+neighbours = ft_prepare_neighbours(cfg); % cfg.neighbours = neighbours; ft_neighbourplot(cfg)
   
+clear pl; f=figure; f.Position = [  350   250   400   400];
+for icond = 4%1:4
   % get 2-8 Hz power to control for
-  cfg=[]; cfg.frequency = [2 8]; cfg.latency = [0.1 0.5]; cfg.channel = channel; cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
+  cfg=[]; cfg.frequency = ctrl_band; cfg.latency = [-0.1 0.1]; cfg.channel = channel; cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
   freq_control = ft_selectdata(cfg, freq_merged{icond});
   
-  cfg=[]; cfg.design = mse_merged{icond}.trialinfo(:,3); % 3 is accuracy
+  cfg=[]; cfg.design = mse_merged{icond}.trialinfo(:,behav_col); % 
   cfg.frequency = [60 100]; cfg.avgoverfreq = 'yes';
   cfg.channel = channel;    cfg.avgoverchan = 'yes';
-  cfg.latency = [-0.5 1.5];
+  cfg.latency = [-0.5 1.25];
   cfg.statistic = 'ft_statfun_partialcorrelationT';  %ft_statfun_correlationT depsamplesT ft_statfun_correlationT_corrcol
   cfg.type = corrtype; 
   cfg.correctm = 'cluster';  %'no'
   cfg.numrandomization = 1000; cfg.uvar=[]; cfg.ivar = 1; cfg.method = 'montecarlo'; cfg.clusteralpha = 0.05; cfg.clusterstatistic = 'maxsum'; cfg.tail = 0; cfg.clustertail = 0; cfg.alpha = 0.025; cfg.spmversion = 'spm12'; cfg.neighbours       = neighbours;
   corrstat_mse = ft_freqstatistics(cfg, mse_merged{icond}); % incong - cong
   
-  cfg.design = [mse_merged{icond}.trialinfo(:,3) freq_control.powspctrm]; % control for theta
+  cfg.design = [mse_merged{icond}.trialinfo(:,behav_col) freq_control.powspctrm]; % control for theta
   corrstat_mse_control = ft_freqstatistics(cfg, mse_merged{icond}); % incong - cong
   
-  cfg.frequency = [2 8]; % straight corr theta vs behav
-  cfg.design = mse_merged{icond}.trialinfo(:,3);
+  cfg.frequency = ctrl_band; % straight corr theta vs behav
+  cfg.design = mse_merged{icond}.trialinfo(:,behav_col);
   corrstat_freq = ft_freqstatistics(cfg, freq_merged{icond}); % incong - cong
   
   % plot corr time series and scatter for significant part
-  subplot(1,1,1);hold on; pl(1) = plot(corrstat_mse.time, squeeze(corrstat_mse.rho));  %'Color', colors{1}
+  subplot(1,1,1);hold on; 
+  pl(1) = plot(corrstat_mse.time, squeeze(corrstat_mse.rho));  %'Color', colors{1}
   title(sprintf('%s\nCorrelation time courses', cond_leg{icond}))
   plot_sig_bar(corrstat_mse.time, squeeze(corrstat_mse.mask)', -0.25, 5, pl(1).Color)
-  xline(0,'HandleVisibility','off'); yline(0,'HandleVisibility','off');
-  
-%   pl(2)=plot(squeeze(corrstat_mse_control.time), squeeze(corrstat_mse_control.rho), 'Color', colors{2});
-%   plot_sig_bar(corrstat_mse_control.time, squeeze(corrstat_mse_control.mask)', -0.35, 5, pl(2).Color)
-  
-%   pl(3)=plot(squeeze(corrstat_freq.time), squeeze(corrstat_freq.rho), 'Color', colors{3}); xline(0); yline(0);
-%   plot_sig_bar(corrstat_freq.time, squeeze(corrstat_freq.mask)', -0.45, 5, pl(3).Color);
-  text(0.4, -0.4, 'p<0.05, corrected')
-%   legend(pl, {'Entropy v. behav' 'Entropy v. behav controlled for 2-8Hz' '2-8 Hz power v. behav'}, 'Location', 'southoutside')
-  legend( cond_leg)
-  xlabel('Time from stim (s)'); ylabel([corrtype ' correlation'])
-  
-  % cfg=[]; cfg.channel = channel; cfg.latency = [0.1 0.5]; cfg.frequency = [60 100]; %[70.027211 142.952381];
-  % cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
-  % corrdat = ft_selectdata(cfg, mse_merged{4});
-  % subplot(1,2,2); scatter(corrdat.powspctrm , mse_merged{4}.trialinfo(:,3), 100, 'MarkerEdgeColor',[1 1 1],...
-  %   'MarkerFaceColor',[0 0 0], 'LineWidth',1.5);
-  % xlabel('Incongruent–congruent mMSE');    ylabel('Incongruent–congruent Accuracy')
-  % [rho, p] = corr(corrdat.powspctrm , mse_merged{4}.trialinfo(:,3), 'type', 'Pearson');
-  % % control for theta
-  % [rho_p, p_p] = partialcorr(corrdat.powspctrm , mse_merged{4}.trialinfo(:,3), freq_control.powspctrm, 'type', 'Pearson');
-  % title(sprintf('r = %.2f, p = %1.3f\ncontrolled for theta: r = %.2f, p = %1.3f', rho, p, rho_p, p_p));
-  % lsline; box on; axis square
-  
-  orient landscape
-  saveas(f, fullfile(plotpath, sprintf('Corr_%s.pdf', cond_leg{icond})), 'pdf')
-  saveas(f, fullfile(plotpath, sprintf('Corr_%s.png', cond_leg{icond})), 'png')
+  xline(0,'HandleVisibility','off'); yline(0,'HandleVisibility','off');  
 end
+text(0.3, -0.3, 'p<0.05, corrected')
+legend( cond_leg)
+xlabel('Time from stim (s)'); ylabel([corrtype ' correlation'])
+orient landscape
+saveas(f, fullfile(plotpath, sprintf('Corr_percond%s.pdf', cond_leg{icond})), 'pdf')
+saveas(f, fullfile(plotpath, sprintf('Corr_percond%s.png', cond_leg{icond})), 'png')
 
-%
+%% plot TFR of rho
+cfg=[];   cfg.layout = lay; cfg.zlim = 'maxabs'; cfg.parameter = 'rho';
+corrstat_mse.mask = double(corrstat_mse.posclusterslabelmat ==1);
+cfg.maskparameter = 'mask';
+ft_singleplotTFR(cfg, corrstat_mse); colorbar
+
+
+%% % plot Incong-Cong inc controls + scatter
+icond=4;
+f=figure; f.Position = [  350   250   800   400]; clear pl
+subplot(1,2,1);hold on; 
+pl(1) = plot(corrstat_mse.time, squeeze(corrstat_mse.rho),'Color', colors{1});  %
+title(sprintf('%s\nCorrelation time courses', cond_leg{icond}))
+plot_sig_bar(corrstat_mse.time, squeeze(corrstat_mse.mask)', -0.25, 5, pl(1).Color)
+xline(0,'HandleVisibility','off'); yline(0,'HandleVisibility','off');
+pl(2)=plot(squeeze(corrstat_mse_control.time), squeeze(corrstat_mse_control.rho), 'Color', colors{2});
+plot_sig_bar(corrstat_mse_control.time, squeeze(corrstat_mse_control.mask)', -0.35, 5, pl(2).Color)
+pl(3)=plot(squeeze(corrstat_freq.time), squeeze(corrstat_freq.rho), 'Color', colors{3}); xline(0); yline(0);
+plot_sig_bar(corrstat_freq.time, squeeze(corrstat_freq.mask)', -0.45, 5, pl(3).Color);
+text(0.3, -0.3, 'p<0.05, corrected')
+legend(pl, {'Entropy v. behav' 'Entropy v. behav controlled for 4-8Hz' '4-8 Hz power v. behav'}, 'Location', 'southoutside')
+xlabel('Time from stim (s)'); ylabel([corrtype ' correlation'])
+
+% scatter
+cfg=[]; cfg.channel = channel; cfg.latency = [-0.1 0.1]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+% cfg=[]; cfg.channel = channel; cfg.latency = [0.7 0.7]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
+corrdat = ft_selectdata(cfg, mse_merged{icond});
+subplot(1,2,2); scatter(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), 100, 'MarkerEdgeColor',[1 1 1],...
+  'MarkerFaceColor',[0 0 0], 'LineWidth',1.5);
+xlabel('Incongruent–congruent mMSE');    ylabel('Incongruent–congruent Accuracy')
+[rho, p] = corr(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), 'type', corrtype);
+% control for theta
+[rho_p, p_p] = partialcorr(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), freq_control.powspctrm, 'type', corrtype);
+% title(sprintf('r = %.2f, p = %1.3f\ncontrolled for theta: r = %.2f, p = %1.3f', rho, p, rho_p, p_p));
+title(sprintf('r = %.2f\ncontrolled for theta: r = %.2f', rho, rho_p));
+lsline; box on; axis square
+
+saveas(f, fullfile(plotpath, sprintf('Corr_ctrl%s.pdf', cond_leg{icond})), 'pdf')
+saveas(f, fullfile(plotpath, sprintf('Corr_ctrl%s.png', cond_leg{icond})), 'png')
+
 % %% plot correlation
 % cfg=[];    cfg.layout = lay;
 % cfg.parameter = 'rho';

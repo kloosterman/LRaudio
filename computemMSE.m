@@ -34,14 +34,6 @@ end
 %     cfg.viewmode = 'vertical';
 %     ft_databrowser(cfg, data)
 
-switch csd
-  case 'csd'
-    cfg=[];
-    cfg.method = 'spline';
-    cfg.elec = 'standard_1020.elc';
-    data = ft_scalpcurrentdensity(cfg, data);
-end
-
 if plotit
   load('acticap-64ch-standard2.mat')
   lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
@@ -49,7 +41,6 @@ if plotit
   cfg.layout = lay;
   ft_multiplotER(cfg, data, scd)
 end
-
 
 disp 'select valid trials...'
 cfg=[];
@@ -88,6 +79,14 @@ cfg=[];
 cfg.trials = data.trialinfo(:,8) == icond-1;
 data = ft_selectdata(cfg, data);
 
+switch csd
+  case 'csd'
+    cfg=[];
+    cfg.method = 'spline';
+    cfg.elec = 'standard_1020.elc';
+    data = ft_scalpcurrentdensity(cfg, data);
+end
+
 % erp analysis
 timelock= ft_timelockanalysis([], data);
 outpath = fullfile(fileparts(datapath), 'timelock', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ, icond));
@@ -120,6 +119,21 @@ switch evoked
   otherwise
     disp 'ERP not removed'
 end
+
+% cfg=[];
+% cfg.bpfilter      = 'yes';
+% cfg.bpfreq        = [4 8];
+% data_theta = ft_preprocessing(cfg, data);
+% data_thetaremoved = data;
+% data_thetaremoved.trial = cellfun(@(x,y) x-y, data.trial, data_theta.trial, 'uni',0);
+% if ismac & plotit
+%   cfg=[];
+%   cfg.viewmode = 'vertical';
+%   ft_databrowser(cfg, data_theta)
+%   ft_databrowser(cfg, data)
+%   ft_databrowser(cfg, data_thetaremoved)
+% end
+
 
 if ismac && plotit
   disp 'average trials'
