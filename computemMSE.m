@@ -34,12 +34,25 @@ end
 %     cfg.viewmode = 'vertical';
 %     ft_databrowser(cfg, data)
 
+% introduce implicit reference
+cfg=[];
+cfg.channel=1:63;
+cfg.reref='no';
+cfg.implicitref='TP9';
+data = ft_preprocessing(cfg, data);
+ 
+% make average reference
+cfg=[];
+cfg.reref='yes';
+cfg.refchannel='all';
+data = ft_preprocessing(cfg, data);
+
 if plotit
-  load('acticap-64ch-standard2.mat')
-  lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
+  load('Acticap_64_UzL.mat')
+%   lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
   cfg = [];
   cfg.layout = lay;
-  ft_multiplotER(cfg, data, scd)
+  ft_multiplotER(cfg, data)
 end
 
 disp 'select valid trials...'

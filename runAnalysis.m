@@ -19,8 +19,9 @@ addpath(genpath(fullfile(toolspath, 'BrainSlicer')))
 plotpath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/plots';
 
 % make eeg layout
-load('acticap-64ch-standard2.mat')
-lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
+% load('acticap-64ch-standard2.mat')
+% lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
+load Acticap_64_UzL.mat
 
 % define subjects
 SUBJ={};
@@ -37,7 +38,7 @@ disp(SUBJ)
 overwrite = 1;
 cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
-cfg.csd = 'csd'; % empty or csd
+cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
@@ -77,7 +78,8 @@ for isub = 1:length(SUBJ)
   %   datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
     %     path = fullfile(fileparts(datapath), 'mse', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'mse', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+%     path = fullfile(fileparts(datapath), 'mse', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'mse', 'subtract', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -90,7 +92,8 @@ for isub = 1:length(SUBJ)
       disp('File not found, skipping')
     end
     %     path = fullfile(fileparts(datapath), 'freq', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'freq', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+%     path = fullfile(fileparts(datapath), 'freq', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'freq', 'subtract', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -98,7 +101,8 @@ for isub = 1:length(SUBJ)
     else
       disp('File not found, skipping')
     end
-    path = fullfile(fileparts(datapath), 'timelock', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+%     path = fullfile(fileparts(datapath), 'timelock', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'timelock', '', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -167,11 +171,11 @@ cfg=[];   cfg.layout = lay;
 ft_multiplotER(cfg, timelock_merged{1}, timelock_merged{2}); colorbar
 %% plot TFR
 cfg=[];   cfg.layout = lay;
-cfg.zlim = 'maxabs';
-% cfg.zlim = [1.17 1.23];
+% cfg.zlim = 'maxabs';
+cfg.zlim = [1.17 1.23];
 % cfg.xlim = [-0.5 1.5];
 % cfg.baseline = [-0.5 0];    cfg.baselinetype = 'relchange';
-ft_multiplotTFR(cfg, freq_merged{3}); colorbar
+ft_multiplotTFR(cfg, mse_merged{3}); colorbar
 %% plot time courses
 cfg=[];   cfg.layout = lay;
 cfg.frequency = [4 8 ];
@@ -181,9 +185,7 @@ ft_multiplotER(cfg,freq_merged{1:2})
 % close all
 xlim = [0.75 1.25];
 channel = {'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'C2', 'Cz', 'C1', 'C3', 'F3', 'F1'};
-% channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C3', 'C1', 'Cz', 'C2'};
-% channel = {'FC3', 'FC1', 'FCz', 'FC2', 'C2', 'Cz', 'C1', 'C3', 'CP3', 'CP1', 'CPz', 'CP2'};
-% channel = {'C3', 'CP3', 'P3'};
+channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP1'}; % CSD
 
 f = figure; f.Position = [680         520        800         800*0.5];
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';
@@ -203,7 +205,7 @@ xlabel('Time from stim (s)'); ylabel('Entropy')
 
 % plot Central pooling freq
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';   cfg.channel = channel;
-cfg.ylim = [0 20]; cfg.zlim = [-0.17 0.17]; cfg.title = 'Power modulation';
+cfg.ylim = [0 100]; cfg.zlim = [-0.17 0.17]; cfg.title = 'Power modulation';
 subplot(2,3,4); ft_singleplotTFR(cfg, freq_merged{3}); xline(0); xlabel('Time from stim (s)'); ylabel('Frequency (Hz)')
 
 cfg=[]; cfg.layout = lay;   cfg.figure = 'gcf'; %cfg.colormap = colormaps(2);
@@ -221,11 +223,11 @@ saveas(f, fullfile(plotpath, ['msevsfreq_' [channel{:}]]), 'png')
 
 %% run stats: correlation mMSE vs behavior
 behav_col=3;% 3 is accuracy,6 is delta_fsemitones
-corrtype='Pearson'; % Spearman Pearson
+corrtype='Spearman'; % Spearman Pearson
 % corrtype='Spearman'; % Spearman Pearson
 cond_leg = {'Incong.', 'Congr.', 'Cong. avg', 'Incong–Congr.'};
 colors = {'r' 'b' 'g'};
-ctrl_band = [1 3]; % 4 8
+ctrl_band = [4 8]; % 4 8 1 3
 cfg = []; cfg.method = 'triangulation'; cfg.layout = lay;
 neighbours = ft_prepare_neighbours(cfg); % cfg.neighbours = neighbours; ft_neighbourplot(cfg)
   
