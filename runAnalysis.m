@@ -30,6 +30,7 @@ for i=1:36
 end
 SUBJbool = true(size(SUBJ));
 SUBJbool([10, 12, 15, 17]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
+% SUBJbool([1]) = false; % avg ref weird
 SUBJ = SUBJ(SUBJbool);
 disp(SUBJ)
 
@@ -38,7 +39,7 @@ disp(SUBJ)
 overwrite = 1;
 cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
-cfg.csd = ''; % empty or csd
+cfg.csd = 'csd'; % empty or csd
 cfg.sensor_or_source = 'sensor';
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
@@ -184,8 +185,9 @@ ft_multiplotER(cfg,freq_merged{1:2})
 %% plot Central pooling mse
 % close all
 xlim = [0.75 1.25];
-channel = {'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'C2', 'Cz', 'C1', 'C3', 'F3', 'F1'};
-channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP1'}; % CSD
+% channel = {'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'C2', 'Cz', 'C1', 'C3', 'F3', 'F1'};
+% channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP1'}; % CSD
+channel = {'FC2', 'FCz', 'FC1', 'C1', 'Cz', 'C2'}; % avg ref 'C3',
 
 f = figure; f.Position = [680         520        800         800*0.5];
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';
@@ -224,7 +226,6 @@ saveas(f, fullfile(plotpath, ['msevsfreq_' [channel{:}]]), 'png')
 %% run stats: correlation mMSE vs behavior
 behav_col=3;% 3 is accuracy,6 is delta_fsemitones
 corrtype='Spearman'; % Spearman Pearson
-% corrtype='Spearman'; % Spearman Pearson
 cond_leg = {'Incong.', 'Congr.', 'Cong. avg', 'Incong–Congr.'};
 colors = {'r' 'b' 'g'};
 ctrl_band = [4 8]; % 4 8 1 3
@@ -244,7 +245,8 @@ for icond = 4%1:4
   cfg.statistic = 'ft_statfun_partialcorrelationT';  %ft_statfun_correlationT depsamplesT ft_statfun_correlationT_corrcol
   cfg.type = corrtype; 
   cfg.correctm = 'cluster';  %'no'
-  cfg.numrandomization = 1000; cfg.uvar=[]; cfg.ivar = 1; cfg.method = 'montecarlo'; cfg.clusteralpha = 0.05; cfg.clusterstatistic = 'maxsum'; cfg.tail = 0; cfg.clustertail = 0; cfg.alpha = 0.025; cfg.spmversion = 'spm12'; cfg.neighbours       = neighbours;
+  cfg.numrandomization = 1000; cfg.uvar=[]; cfg.ivar = 1; cfg.method = 'montecarlo'; cfg.clusteralpha = 0.05; cfg.clusterstatistic = 'maxsum'; cfg.tail = 0; cfg.clustertail = 0;  cfg.spmversion = 'spm12'; cfg.neighbours       = neighbours;
+  cfg.alpha = 0.05;
   corrstat_mse = ft_freqstatistics(cfg, mse_merged{icond}); % incong - cong
   
   cfg.design = [mse_merged{icond}.trialinfo(:,behav_col) freq_control.powspctrm]; % control for theta
@@ -268,13 +270,6 @@ orient landscape
 saveas(f, fullfile(plotpath, sprintf('Corr_percond%s.pdf', cond_leg{icond})), 'pdf')
 saveas(f, fullfile(plotpath, sprintf('Corr_percond%s.png', cond_leg{icond})), 'png')
 
-%% plot TFR of rho
-cfg=[];   cfg.layout = lay; cfg.zlim = 'maxabs'; cfg.parameter = 'rho';
-corrstat_mse.mask = double(corrstat_mse.posclusterslabelmat ==1);
-cfg.maskparameter = 'mask';
-ft_singleplotTFR(cfg, corrstat_mse); colorbar
-
-
 %% % plot Incong-Cong inc controls + scatter
 icond=4;
 f=figure; f.Position = [  350   250   800   400]; clear pl
@@ -292,8 +287,8 @@ legend(pl, {'Entropy v. behav' 'Entropy v. behav controlled for 4-8Hz' '4-8 Hz p
 xlabel('Time from stim (s)'); ylabel([corrtype ' correlation'])
 
 % scatter
-cfg=[]; cfg.channel = channel; cfg.latency = [-0.1 0.1]; cfg.frequency = [60 100]; %[70.027211 142.952381];
-% cfg=[]; cfg.channel = channel; cfg.latency = [0.7 0.7]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+% cfg=[]; cfg.channel = channel; cfg.latency = [-0.1 0.1]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+cfg=[]; cfg.channel = channel; cfg.latency = [1 1.2]; cfg.frequency = [60 100]; %[70.027211 142.952381];
 cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
 corrdat = ft_selectdata(cfg, mse_merged{icond});
 subplot(1,2,2); scatter(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), 100, 'MarkerEdgeColor',[1 1 1],...
@@ -309,16 +304,25 @@ lsline; box on; axis square
 saveas(f, fullfile(plotpath, sprintf('Corr_ctrl%s.pdf', cond_leg{icond})), 'pdf')
 saveas(f, fullfile(plotpath, sprintf('Corr_ctrl%s.png', cond_leg{icond})), 'png')
 
-% %% plot correlation
-% cfg=[];    cfg.layout = lay;
-% cfg.parameter = 'rho';
-% cfg.colorbar = 'yes';
-% cfg.zlim = 'maxabs';
-% % cfg.zlim = [1.17 1.23];
-% %     cfg.xlim = [-0.5 1.5];
+
+%% plot TFR of rho
+cfg=[];   cfg.layout = lay; cfg.zlim = 'maxabs'; cfg.parameter = 'rho'; cfg.colorbar  = 'yes';
+% corrstat_mse.mask = double(corrstat_mse.posclusterslabelmat ==1);
 % cfg.maskparameter = 'mask';
-% corrstat.mask = double(corrstat.posclusterslabelmat == 1);
-% ft_multiplotTFR(cfg, corrstat)
+% ft_singleplotTFR(cfg, corrstat_mse); colorbar
+ft_multiplotTFR(cfg, corrstat_mse); colorbar
+
+
+%% plot correlation
+cfg=[];    cfg.layout = lay;
+cfg.parameter = 'rho';
+cfg.colorbar = 'yes';
+cfg.zlim = 'maxabs';
+% cfg.zlim = [1.17 1.23];
+%     cfg.xlim = [-0.5 1.5];
+% cfg.maskparameter = 'mask';
+% corrstat_mse.mask = double(corrstat_mse.posclusterslabelmat == 1);
+ft_multiplotTFR(cfg, corrstat_mse)
 % % ft_multiplotER(cfg, corrstat)
 %
 % orient landscape
