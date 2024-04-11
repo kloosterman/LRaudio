@@ -30,24 +30,9 @@ switch sensor_or_source
     cfg = [];
     data = ft_appenddata(cfg, data{:});
 end
-%   cfg=[];
-%     cfg.viewmode = 'vertical';
-%     ft_databrowser(cfg, data)
-
-% introduce implicit reference
-cfg=[];
-cfg.channel=1:63;
-cfg.reref='no';
-cfg.implicitref='TP9';
-data = ft_preprocessing(cfg, data);
- 
-% make average reference
-cfg=[];
-cfg.reref='yes';
-cfg.refchannel='all';
-data = ft_preprocessing(cfg, data);
 
 if plotit
+  ft_databrowser([],data)
   load('Acticap_64_UzL.mat')
 %   lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
   cfg = [];
@@ -65,8 +50,9 @@ if length(data.trial)<2
   mse=[];
   return
 end
-% make stim-locked
-data_ori=data;
+
+disp 'make stim-locked'
+% data_ori=data;
 cfg=[];
 % cfg.offset = -round(data.trialinfo(:,7)/4);
 compression_factor = 44100/48000;
@@ -79,15 +65,40 @@ cfg=[];
 cfg.latency = [-1 2.5];
 data = ft_selectdata(cfg, data);
 
+if plotit
+  ft_rejectvisual([],data)
+  cfg=[];  cfg.viewmode = 'vertical';  ft_databrowser(cfg, data)
+end
+
+% introduce implicit reference
+cfg=[];
+cfg.channel=1:63;
+cfg.reref='no';
+cfg.implicitref='TP9';
+data = ft_preprocessing(cfg, data);
+% make average reference
+cfg=[];
+cfg.reref='yes';
+cfg.refchannel='all';
+data = ft_preprocessing(cfg, data);
+
+disp 'reject trials with large variance'
+par = [];   par.badtrs = []; par.method = 'zscorecut';
+to_plot=0;
+keeptrls = EM_ft_varcut3(data, par, to_plot);
+cfg=[]; cfg.trials = keeptrls;
+data=ft_selectdata(cfg, data);
+
 if ismac
   ft_databrowser([], ft_timelockanalysis([],data))
   timelock=ft_timelockanalysis([],data);
-  timelock_ori=ft_timelockanalysis([],data_ori);
+%   timelock_ori=ft_timelockanalysis([],data_ori);
   figure; hold on; plot(timelock.time, mean(timelock.avg)); xlim([-0.5 1]); title('stim-locked'); xline(0)
   plot(timelock_ori.time, mean(timelock_ori.avg)); xlim([-0.5 1]); title('stim-locked')
   legend({'stim-locked' 'cue-locked'}); ax=gca; ax.XTick=[-0.5:0.1:1.5 ];
 end
 
+disp 'select trials for cond'
 cfg=[];
 cfg.trials = data.trialinfo(:,8) == icond-1;
 data = ft_selectdata(cfg, data);

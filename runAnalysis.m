@@ -39,7 +39,7 @@ disp(SUBJ)
 overwrite = 1;
 cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
-cfg.csd = 'csd'; % empty or csd
+cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
@@ -191,11 +191,11 @@ channel = {'FC2', 'FCz', 'FC1', 'C1', 'Cz', 'C2'}; % avg ref 'C3',
 
 f = figure; f.Position = [680         520        800         800*0.5];
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';
-cfg.channel = channel;  cfg.zlim = [1.17 1.23]; cfg.title = 'Entropy';
+cfg.channel = channel;  cfg.zlim = [1.16 1.23]; cfg.title = 'Entropy';
 subplot(2,3,1);     ft_singleplotTFR(cfg, mse_merged{3}); xline(0); xlabel('Time from stim (s)'); ylabel('Time scale (ms)')
 
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';
-cfg.xlim = [0 0.2];   cfg.ylim = [60 100];   cfg.zlim = [1.17 1.22];
+cfg.xlim = [0 0.2];   cfg.ylim = [60 100];   cfg.zlim = [1.16 1.23]; %cfg.zlim = [1.17 1.22];
 cfg.highlightchannel = channel; cfg.highlight = 'on';
 subplot(2,3,2);     ft_topoplotTFR(cfg, mse_merged{3}); %colorbar
 
@@ -212,6 +212,7 @@ subplot(2,3,4); ft_singleplotTFR(cfg, freq_merged{3}); xline(0); xlabel('Time fr
 
 cfg=[]; cfg.layout = lay;   cfg.figure = 'gcf'; %cfg.colormap = colormaps(2);
 cfg.xlim = [0 0.2];   cfg.ylim = [4 8];    cfg.zlim = 'maxabs';
+% cfg.xlim = [1 2];   cfg.ylim = [60 80];    cfg.zlim = 'maxabs';
 subplot(2,3,5); ft_topoplotTFR(cfg, freq_merged{3}); %colorbar;
 
 cfg=[]; cfg.figure = 'gcf'; cfg.channel = channel; cfg.title = ' ';  cfg.frequency = [4 8]; % cfg.showlegend = 'yes'; cfg.dataname = {'Incong.', 'Cong.'};
