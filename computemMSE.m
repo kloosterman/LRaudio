@@ -84,9 +84,10 @@ data = ft_preprocessing(cfg, data);
 
 disp 'reject trials with large variance'
 par = [];   par.badtrs = []; par.method = 'zscorecut';
-to_plot=0;
+to_plot=0; if ismac; to_plot=1; end
 keeptrls = EM_ft_varcut3(data, par, to_plot);
-cfg=[]; cfg.trials = keeptrls;
+cfg=[];
+cfg.trials = keeptrls;
 data=ft_selectdata(cfg, data);
 
 if ismac

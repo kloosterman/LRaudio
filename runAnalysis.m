@@ -39,7 +39,7 @@ disp(SUBJ)
 overwrite = 1;
 cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
-cfg.csd = ''; % empty or csd
+cfg.csd = 'csd'; % empty or csd
 cfg.sensor_or_source = 'sensor';
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
@@ -62,7 +62,11 @@ if ismac % submit to tardis, or run locally
   cellfun(@computemMSE, cfglist, 'Uni', 0);
 else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 '
 %   if strcmp(cfg.analysis, 'mse')
-    qsubcellfun(@computemMSE, cfglist, 'memreq', 100e9, 'timreq', 46*60*60, 'stack', 1, ...
+% all scales:
+%     qsubcellfun(@computemMSE, cfglist, 'memreq', 100e9, 'timreq', 46*60*60, 'stack', 1, ...
+%       'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 --partition long');
+% scales 10-40
+    qsubcellfun(@computemMSE, cfglist, 'memreq', 10e9, 'timreq', 8*60*60, 'stack', 1, ...
       'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 --partition long');
 %   else
 %     qsubcellfun(@computemMSE, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
@@ -226,7 +230,7 @@ saveas(f, fullfile(plotpath, ['msevsfreq_' [channel{:}]]), 'png')
 
 %% run stats: correlation mMSE vs behavior
 behav_col=3;% 3 is accuracy,6 is delta_fsemitones
-corrtype='Spearman'; % Spearman Pearson
+corrtype='Pearson'; % Spearman Pearson
 cond_leg = {'Incong.', 'Congr.', 'Cong. avg', 'Incong–Congr.'};
 colors = {'r' 'b' 'g'};
 ctrl_band = [4 8]; % 4 8 1 3
