@@ -79,7 +79,8 @@ data = ft_preprocessing(cfg, data);
 % make average reference
 cfg=[];
 cfg.reref='yes';
-cfg.refchannel='all';
+% cfg.refchannel='all';
+cfg.refchannel={'TP9', 'TP10'};
 data = ft_preprocessing(cfg, data);
 
 disp 'reject trials with large variance'

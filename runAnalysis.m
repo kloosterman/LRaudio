@@ -84,7 +84,7 @@ for isub = 1:length(SUBJ)
   for icond = 1:2
     %     path = fullfile(fileparts(datapath), 'mse', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
 %     path = fullfile(fileparts(datapath), 'mse', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'mse', 'subtract', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'mse', 'subtract', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -98,7 +98,7 @@ for isub = 1:length(SUBJ)
     end
     %     path = fullfile(fileparts(datapath), 'freq', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
 %     path = fullfile(fileparts(datapath), 'freq', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'freq', 'subtract', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'freq', 'subtract', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -107,7 +107,7 @@ for isub = 1:length(SUBJ)
       disp('File not found, skipping')
     end
 %     path = fullfile(fileparts(datapath), 'timelock', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'timelock', '', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'timelock', '', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
