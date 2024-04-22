@@ -70,18 +70,18 @@ if plotit
   cfg=[];  cfg.viewmode = 'vertical';  ft_databrowser(cfg, data)
 end
 
-% introduce implicit reference
-cfg=[];
-cfg.channel=1:63;
-cfg.reref='no';
-cfg.implicitref='TP9';
-data = ft_preprocessing(cfg, data);
-% make average reference
-cfg=[];
-cfg.reref='yes';
-% cfg.refchannel='all';
-cfg.refchannel={'TP9', 'TP10'};
-data = ft_preprocessing(cfg, data);
+% % introduce implicit reference
+% cfg=[];
+% cfg.channel=1:63;
+% cfg.reref='no';
+% cfg.implicitref='TP9';
+% data = ft_preprocessing(cfg, data);
+% % make average reference
+% cfg=[];
+% cfg.reref='yes';
+% % cfg.refchannel='all';
+% cfg.refchannel={'TP9', 'TP10'};
+% data = ft_preprocessing(cfg, data);
 
 disp 'reject trials with large variance'
 par = [];   par.badtrs = []; par.method = 'zscorecut';
@@ -91,19 +91,25 @@ cfg=[];
 cfg.trials = keeptrls;
 data=ft_selectdata(cfg, data);
 
-if ismac
-  ft_databrowser([], ft_timelockanalysis([],data))
-  timelock=ft_timelockanalysis([],data);
+% if ismac
+%   ft_databrowser([], ft_timelockanalysis([],data))
+%   timelock=ft_timelockanalysis([],data);
 %   timelock_ori=ft_timelockanalysis([],data_ori);
-  figure; hold on; plot(timelock.time, mean(timelock.avg)); xlim([-0.5 1]); title('stim-locked'); xline(0)
-  plot(timelock_ori.time, mean(timelock_ori.avg)); xlim([-0.5 1]); title('stim-locked')
-  legend({'stim-locked' 'cue-locked'}); ax=gca; ax.XTick=[-0.5:0.1:1.5 ];
-end
+%   figure; hold on; plot(timelock.time, mean(timelock.avg)); xlim([-0.5 1]); title('stim-locked'); xline(0)
+%   plot(timelock_ori.time, mean(timelock_ori.avg)); xlim([-0.5 1]); title('stim-locked')
+%   legend({'stim-locked' 'cue-locked'}); ax=gca; ax.XTick=[-0.5:0.1:1.5 ];
+% end
 
 disp 'select trials for cond'
 cfg=[];
 cfg.trials = data.trialinfo(:,8) == icond-1;
 data = ft_selectdata(cfg, data);
+
+plotit=1
+if plotit
+  ft_rejectvisual([],data)
+  cfg=[];  cfg.viewmode = 'vertical';  ft_databrowser(cfg, data)
+end
 
 switch csd
   case 'csd'

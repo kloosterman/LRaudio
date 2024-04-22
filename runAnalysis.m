@@ -1,22 +1,25 @@
 global datapath
 if ismac
   %   datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
-    datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
+    % datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/data';
+    datapath = '/Users/kloosterman/projectdata/LRaudio/data';
 %   datapath = '/Users/kloosterman/gridmaster2012/projectdata/LRaudio/source';
   toolspath = '/Users/kloosterman/Documents/GitHub/';
+  addpath(fullfile(toolspath, 'fieldtrip-20231025')); ft_defaults
 else
     datapath = '/home/mpib/kloosterman/projectdata/LRaudio/data';
 %   datapath = '/home/mpib/kloosterman/projectdata/LRaudio/source';
   toolspath = '/home/mpib/kloosterman/GitHub/';
+  addpath(fullfile(toolspath, 'fieldtrip')); ft_defaults
 end
 
 restoredefaultpath
-addpath(fullfile(toolspath, 'fieldtrip')); ft_defaults
 addpath(fullfile(toolspath, 'mMSE'));
 addpath(fullfile(toolspath, 'LRaudio'))
 addpath(fullfile(toolspath, 'qsub-tardis'))
 addpath(genpath(fullfile(toolspath, 'BrainSlicer')))
-plotpath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/plots';
+% plotpath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/plots';
+plotpath = '/Users/kloosterman/Dropbox/PROJECTS/LRaudio/plots';
 
 % make eeg layout
 % load('acticap-64ch-standard2.mat')
@@ -71,7 +74,7 @@ else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 
 %   else
 %     qsubcellfun(@computemMSE, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
 %       'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');
-%   end
+% end
   return
 end
 
@@ -84,7 +87,7 @@ for isub = 1:length(SUBJ)
   for icond = 1:2
     %     path = fullfile(fileparts(datapath), 'mse', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
 %     path = fullfile(fileparts(datapath), 'mse', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'mse', 'subtract', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'mse', 'subtract_avgref', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -98,7 +101,7 @@ for isub = 1:length(SUBJ)
     end
     %     path = fullfile(fileparts(datapath), 'freq', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
 %     path = fullfile(fileparts(datapath), 'freq', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'freq', 'subtract', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'freq', 'subtract_avgref', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -107,7 +110,7 @@ for isub = 1:length(SUBJ)
       disp('File not found, skipping')
     end
 %     path = fullfile(fileparts(datapath), 'timelock', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
-    path = fullfile(fileparts(datapath), 'timelock', '', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'timelock', 'subtract', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -250,7 +253,7 @@ for icond = 4%1:4
   cfg.statistic = 'ft_statfun_partialcorrelationT';  %ft_statfun_correlationT depsamplesT ft_statfun_correlationT_corrcol
   cfg.type = corrtype; 
   cfg.correctm = 'cluster';  %'no'
-  cfg.numrandomization = 1000; cfg.uvar=[]; cfg.ivar = 1; cfg.method = 'montecarlo'; cfg.clusteralpha = 0.05; cfg.clusterstatistic = 'maxsum'; cfg.tail = 0; cfg.clustertail = 0;  cfg.spmversion = 'spm12'; cfg.neighbours       = neighbours;
+  cfg.numrandomization = 10000; cfg.uvar=[]; cfg.ivar = 1; cfg.method = 'montecarlo'; cfg.clusteralpha = 0.05; cfg.clusterstatistic = 'maxsum'; cfg.tail = 0; cfg.clustertail = 0;  cfg.spmversion = 'spm8'; cfg.neighbours       = neighbours;
   cfg.alpha = 0.05;
   corrstat_mse = ft_freqstatistics(cfg, mse_merged{icond}); % incong - cong
   
@@ -292,8 +295,8 @@ legend(pl, {'Entropy v. behav' 'Entropy v. behav controlled for 4-8Hz' '4-8 Hz p
 xlabel('Time from stim (s)'); ylabel([corrtype ' correlation'])
 
 % scatter
-% cfg=[]; cfg.channel = channel; cfg.latency = [-0.1 0.1]; cfg.frequency = [60 100]; %[70.027211 142.952381];
-cfg=[]; cfg.channel = channel; cfg.latency = [1 1.2]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+cfg=[]; cfg.channel = channel; cfg.latency = [0 0.2]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+% cfg=[]; cfg.channel = channel; cfg.latency = [1 1.2]; cfg.frequency = [60 100]; %[70.027211 142.952381];
 cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
 corrdat = ft_selectdata(cfg, mse_merged{icond});
 subplot(1,2,2); scatter(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), 100, 'MarkerEdgeColor',[1 1 1],...
