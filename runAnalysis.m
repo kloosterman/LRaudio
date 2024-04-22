@@ -1,3 +1,4 @@
+restoredefaultpath
 global datapath
 if ismac
   %   datapath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/data';
@@ -13,7 +14,6 @@ else
   addpath(fullfile(toolspath, 'fieldtrip')); ft_defaults
 end
 
-restoredefaultpath
 addpath(fullfile(toolspath, 'mMSE'));
 addpath(fullfile(toolspath, 'LRaudio'))
 addpath(fullfile(toolspath, 'qsub-tardis'))
