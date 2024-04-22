@@ -105,7 +105,6 @@ cfg=[];
 cfg.trials = data.trialinfo(:,8) == icond-1;
 data = ft_selectdata(cfg, data);
 
-plotit=1
 if plotit
   ft_rejectvisual([],data)
   cfg=[];  cfg.viewmode = 'vertical';  ft_databrowser(cfg, data)
