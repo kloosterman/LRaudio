@@ -119,7 +119,7 @@ switch csd
     data = ft_scalpcurrentdensity(cfg, data);
 end
 
-% erp analysis
+disp 'erp analysis'
 timelock= ft_timelockanalysis([], data);
 outpath = fullfile(fileparts(datapath), 'timelock', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ, icond));
 mkdir(fileparts(outpath))
