@@ -126,8 +126,6 @@ mkdir(fileparts(outpath))
 disp(outpath)
 save(outpath, 'timelock')
 
-return
-
 switch evoked
   case 'regress'
     timelock= ft_timelockanalysis([], data);

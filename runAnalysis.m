@@ -44,7 +44,7 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 overwrite = 1;
 cfglist = {}; cfg=[];
-cfg.evoked = ''; % empty, regress, or subtract
+cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
 for isub = 1:length(SUBJ)
