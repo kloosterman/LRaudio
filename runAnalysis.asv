@@ -44,7 +44,7 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 overwrite = 1;
 cfglist = {}; cfg=[];
-cfg.evoked = ''; % empty, regress, or subtract
+cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
 for isub = 1:length(SUBJ)
@@ -56,7 +56,7 @@ for isub = 1:length(SUBJ)
         cfg.datafile = fullfile(datapath, 'data', SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
       case 'source' % TODO fix path
         cfg.datafile = fullfile(datapath, 'source', SUBJ{isub}, sprintf('SourceTimeSeries_BW_1-100Hz_ParcelSpace_Block*.mat'));
-        cfg.outpath = fullfile(datapath, 'source', cfg.analysis, cfg.evoked, cfg.csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+        cfg.outpath = fullfile(datapath, 'data', cfg.analysis, cfg.evoked, cfg.csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     end
     if overwrite || ~exist(cfg.outpath, 'file')
       cfglist{end+1} = cfg;
@@ -82,8 +82,8 @@ else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 
 end
 
 %% Merge mse files across subjects and cond
-evoked = 'subtract_avgref'; % subtract_avgref
-csd = ''; % csd
+evoked = 'subtract_avgref';
+csd = '';
 
 disp 'Merge analyses'
 mse_tmp = {}; freq_tmp = {}; timelock_tmp = {};
@@ -91,7 +91,10 @@ trialinfo = []; trialinfo_trl = {};
 for isub = 1:length(SUBJ)
   %   datafile = fullfile(datapath, SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
   for icond = 1:2
-    path = fullfile(datapath, 'mse', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    %     path = fullfile(fileparts(datapath), 'mse', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    % path = fullfile(fileparts(datapath), 'mse', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    % path = fullfile(fileparts(datapath), 'mse', 'subtract_mastoidsref', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'mse', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -104,7 +107,10 @@ for isub = 1:length(SUBJ)
     else
       disp('File not found, skipping')
     end
-    path = fullfile(datapath, 'freq', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    %     path = fullfile(fileparts(datapath), 'freq', 'regress', 'csd', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    % path = fullfile(fileparts(datapath), 'freq', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    % path = fullfile(fileparts(datapath), 'freq', 'subtract_mastoidsref', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'freq', 'subtract_avgref', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
@@ -112,7 +118,8 @@ for isub = 1:length(SUBJ)
     else
       disp('File not found, skipping')
     end
-    path = fullfile(datapath, 'timelock', '', csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+%     path = fullfile(fileparts(datapath), 'timelock', 'subtract', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
+    path = fullfile(fileparts(datapath), 'timelock', 'subtract_mastoidsref', '', sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     disp(path)
     if exist(path, 'file')
       load(path)
