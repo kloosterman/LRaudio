@@ -35,8 +35,8 @@ SUBJbool = true(size(SUBJ));
 % #31: staircase at max, accuracy only 0.6006 
 % #3: staircase at minimum (0.01) in many trials
 % 34 sc at max until halfway, then drops, convergence weird?
-% SUBJbool([10, 12, 15, 17,    31, 6, 3 ]) = false; 
-SUBJbool([10, 12, 15, 17 ]) = false; 
+SUBJbool([10, 12, 15, 17,    31, 6, 3 ]) = false; 
+% SUBJbool([10, 12, 15, 17 ]) = false; 
 SUBJ = SUBJ(SUBJbool);
 disp(SUBJ)
 
@@ -47,6 +47,7 @@ cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
+cfg.runperblock = 'yes'; % empty for all together, or per block.
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
   for icond = 1:2
@@ -54,13 +55,10 @@ for isub = 1:length(SUBJ)
     switch cfg.sensor_or_source
       case 'sensor'
         cfg.datafile = fullfile(datapath, 'data', SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
-      case 'source' % TODO fix path
+      case 'source' 
         cfg.datafile = fullfile(datapath, 'source', SUBJ{isub}, sprintf('SourceTimeSeries_BW_1-100Hz_ParcelSpace_Block*.mat'));
-        cfg.outpath = fullfile(datapath, 'source', cfg.analysis, cfg.evoked, cfg.csd, sprintf('SUB%s_cond%d.mat', SUBJ{isub}, icond));
     end
-    if overwrite || ~exist(cfg.outpath, 'file')
-      cfglist{end+1} = cfg;
-    end
+    if overwrite;      cfglist{end+1} = cfg;       end
   end
 end
 
@@ -82,7 +80,7 @@ else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 
 end
 
 %% Merge mse files across subjects and cond
-evoked = 'subtract_avgref'; % subtract_avgref
+evoked = 'subtract_avgref'; % subtract_avgref subtract
 csd = ''; % csd
 
 disp 'Merge analyses'
