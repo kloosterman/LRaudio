@@ -208,6 +208,7 @@ freq{1} = ft_freqanalysis(cfg, data);
 cfg.taper        = 'dpss';
 cfg.foi          = logspace( 1.5, 2, 10); % 30:4:100;
 cfg.tapsmofrq    = ones(length(cfg.foi),1).*4;   % length of time window = 0.5 sec
+cfg.t_ftimwin    = ones(length(cfg.foi),1).*0.5;   % length of time window = 0.5 sec
 freq{2} = ft_freqanalysis(cfg, data);
 
 cfg=[];
