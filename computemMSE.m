@@ -128,7 +128,6 @@ save(outpath, 'timelock')
 
 switch evoked
   case 'regress'
-    timelock= ft_timelockanalysis([], data);
     timelock.avg(:, timelock.time < 0) = 0;
     timelock.avg(:, timelock.time > 1.5) = 0;
     disp 'regress ERP from single trials'
@@ -144,7 +143,6 @@ switch evoked
       end
     end
   case 'subtract'
-    timelock= ft_timelockanalysis([], data);
     for itrial = 1:size(data.trial,2)
       data.trial{itrial} = data.trial{itrial} - timelock.avg;
     end
@@ -240,7 +238,7 @@ cfg = [];
 cfg.m = 2;
 cfg.r = 0.5;
 cfg.timwin = 0.5;
-cfg.toi = [-0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9 2];
+cfg.toi = [-0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 ]; % 1.6 1.7 1.8 1.9 2
 % cfg.toi = [-0.5];
 %     cfg.timescales = 1:40;
 cfg.timescales = 10:30;
