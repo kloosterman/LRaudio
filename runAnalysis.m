@@ -23,20 +23,24 @@ plotpath = '/Users/kloosterman/Dropbox/PROJECTS/LRaudio/plots';
 % lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
 load Acticap_64_UzL.mat
 
+age_group = 'OA';
+
 % define subjects
 SUBJ={};
-for i=1:36
+for i=1:37
   SUBJ{end+1} = sprintf('%d', i);
 end
 SUBJbool = true(size(SUBJ));
-% SUBJbool([10, 12, 15, 17 ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
-% exclude 10 and 15, 17 missing, 12 conditions missing,
-% #6 staircase not converging + datamissing, accuracy only 0.65
-% #31: staircase at max, accuracy only 0.6006
-% #3: staircase at minimum (0.01) in many trials
-% 34 sc at max until halfway, then drops, convergence weird?
-SUBJbool([10, 12, 15, 17,    31, 6, 3 ]) = false;
-% SUBJbool([10, 12, 15, 17 ]) = false;
+if strcmp(age_group, 'YA')
+  % SUBJbool([10, 12, 15, 17 ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
+  % exclude 10 and 15, 17 missing, 12 conditions missing,
+  % #6 staircase not converging + datamissing, accuracy only 0.65
+  % #31: staircase at max, accuracy only 0.6006
+  % #3: staircase at minimum (0.01) in many trials
+  % 34 sc at max until halfway, then drops, convergence weird?
+  SUBJbool([37, 10, 12, 15, 17,    31, 6, 3 ]) = false;
+else
+end
 SUBJ = SUBJ(SUBJbool);
 disp(SUBJ)
 
@@ -44,17 +48,21 @@ disp(SUBJ)
 % make list of files to analyze on tardis
 overwrite = 1;
 cfglist = {}; cfg=[];
-cfg.evoked = ''; % empty, regress, or subtract
+cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
-cfg.runperblock = 'yes'; % empty for all together, or per block.
+cfg.runperblock = 'no'; % empty for all together, or per block.
 for isub = 1:length(SUBJ)
   cfg.SUBJ = SUBJ{isub};
   for icond = 1:2
     cfg.icond = icond;
     switch cfg.sensor_or_source
       case 'sensor'
-        cfg.datafile = fullfile(datapath, 'data', SUBJ{isub}, sprintf('clean_SUB%s', [SUBJ{isub} '.mat']));
+        if strcmp(age_group, 'YA')
+          cfg.datafile = fullfile(datapath,  age_group, 'data', SUBJ{isub}, sprintf('clean_SUB%s.mat', SUBJ{isub}));
+        else
+          cfg.datafile = fullfile(datapath,  age_group, 'data', SUBJ{isub}, sprintf('NICOSA_%s_clean_task.mat', SUBJ{isub}));
+        end
       case 'source'
         cfg.datafile = fullfile(datapath, 'source', SUBJ{isub}, sprintf('SourceTimeSeries_BW_1-100Hz_ParcelSpace_Block*.mat'));
     end

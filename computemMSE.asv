@@ -265,12 +265,12 @@ if strcmp(runperblock, 'yes')
   for iblock = 1:max(block_col)
     cfg.trials = block_col == iblock;
     mse{iblock} = ft_entropyanalysis(cfg, data);
-    outpath = fullfile(datapath, age_group, 'mse', evoked, csd, sprintf('SUB%s_cond%d_blocks.mat', SUBJ, icond));
+    outpath = fullfile(datapath, 'mse', evoked, csd, sprintf('SUB%s_cond%d_blocks.mat', SUBJ, icond));
   end
 else
   cfg.trials = 'all';
   mse = ft_entropyanalysis(cfg, data);
-  outpath = fullfile(datapath, age_group, 'mse', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ, icond));
+  outpath = fullfile(datapath, 'mse', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ, icond));
 end
 
 mkdir(fileparts(outpath))
