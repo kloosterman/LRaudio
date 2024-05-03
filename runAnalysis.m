@@ -63,7 +63,7 @@ for iage = 2
       cfg.icond = icond;
       switch cfg.sensor_or_source
         case 'sensor'
-          if strcmp(age_group, 'YA')
+          if strcmp(age_groups{iage}, 'YA')
             cfg.datafile = fullfile(datapath,  age_groups{iage}, 'data', SUBJ{iage}{isub}, sprintf('clean_SUB%s.mat', SUBJ{iage}{isub}));
           else
             cfg.datafile = fullfile(datapath,  age_groups{iage}, 'data', SUBJ{iage}{isub}, sprintf('NICOSA_%s_clean_task.mat', SUBJ{iage}{isub}));
