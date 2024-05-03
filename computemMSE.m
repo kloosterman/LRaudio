@@ -56,8 +56,12 @@ disp 'make stim-locked'
 % data_ori=data;
 cfg=[];
 % cfg.offset = -round(data.trialinfo(:,7)/4);
-compression_factor = 44100/48000;
-cfg.offset = -round(((data.trialinfo(:,7)/1000)+0.5)*data.fsample*compression_factor);
+if strcmp(age_group, 'YA')
+  compression_factor = 44100/48000;
+  cfg.offset = -round(((data.trialinfo(:,7)/1000)+0.5)*data.fsample*compression_factor);
+else
+  cfg.offset = -round(((data.trialinfo(:,7)/1000)+0.5)*data.fsample);
+end
 %figure; histogram(cfg.offset)
 data = ft_redefinetrial(cfg, data);
 
