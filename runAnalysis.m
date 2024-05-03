@@ -64,9 +64,9 @@ for iage = 2
       switch cfg.sensor_or_source
         case 'sensor'
           if strcmp(age_group, 'YA')
-            cfg.datafile = fullfile(datapath,  age_group, 'data', SUBJ{iage}{isub}, sprintf('clean_SUB%s.mat', SUBJ{iage}{isub}));
+            cfg.datafile = fullfile(datapath,  age_groups{iage}, 'data', SUBJ{iage}{isub}, sprintf('clean_SUB%s.mat', SUBJ{iage}{isub}));
           else
-            cfg.datafile = fullfile(datapath,  age_group, 'data', SUBJ{iage}{isub}, sprintf('NICOSA_%s_clean_task.mat', SUBJ{iage}{isub}));
+            cfg.datafile = fullfile(datapath,  age_groups{iage}, 'data', SUBJ{iage}{isub}, sprintf('NICOSA_%s_clean_task.mat', SUBJ{iage}{isub}));
           end
         case 'source'
           cfg.datafile = fullfile(datapath, 'source', SUBJ{iage}{isub}, sprintf('SourceTimeSeries_BW_1-100Hz_ParcelSpace_Block*.mat'));
