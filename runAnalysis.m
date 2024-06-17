@@ -11,19 +11,17 @@ else
   addpath(fullfile(toolspath, 'fieldtrip')); ft_defaults
 end
 
+addpath('/Users/kloosterman/Dropbox/tardis_code/MATLAB/tools/custom_tools/plotting/plotSpread')
 addpath(fullfile(toolspath, 'mMSE'));
 addpath(fullfile(toolspath, 'LRaudio'))
 addpath(fullfile(toolspath, 'qsub-tardis'))
 addpath(genpath(fullfile(toolspath, 'BrainSlicer')))
+addpath(fullfile(toolspath, 'LRaudio', 'sigstar'))
 % plotpath = '/Users/kloosterman/Library/CloudStorage/Dropbox/PROJECTS/LRaudio/plots';
 plotpath = '/Users/kloosterman/Dropbox/PROJECTS/LRaudio/plots';
-
-% make eeg layout
-% load('acticap-64ch-standard2.mat')
-% lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
 load Acticap_64_UzL.mat
 
-age_groups = {'YA' 'OA'};
+age_groups = {'YA' 'OA' ''}; % 3 is all subj
 
 % define subjects
 SUBJ=cell(1,2);
@@ -34,12 +32,14 @@ for iage = 1:2
   SUBJbool = true(size(SUBJ{iage}));
   if strcmp(age_groups{iage}, 'YA')
     % SUBJbool([10, 12, 15, 17 ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
-    % exclude 10 and 15, 17 missing, 12 conditions missing,
+    % exclude 37 10 and 15, 17 missing, 12 conditions missing,
     % #6 staircase not converging + datamissing, accuracy only 0.65
     % #31: staircase at max, accuracy only 0.6006
+    % #33: staircase at max, accuracy only 0.6006
     % #3: staircase at minimum (0.01) in many trials
     % 34 sc at max until halfway, then drops, convergence weird?
-    SUBJbool([37, 10, 12, 15, 17,    31, 6, 3 ]) = false;
+    SUBJbool([37, 10, 12, 15, 17,    31, 6, 3, 33 ]) = false;
+    % SUBJbool([37, 10, 12, 15, 17 ]) = false;
   else
     % 7 and 34 don't exist
     SUBJbool([ 7, 34 ]) = false;
@@ -49,14 +49,14 @@ end
 disp(SUBJ)
 
 %% compute entropy, freqanalysis and ERPs
-% make list of files to analyze on tardis TODO loop over age_groups
+% make list of files to analyze on tardis 
 overwrite = 1;
 cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
 cfg.runperblock = 'no'; % empty for all together, or per block.
-for iage = 2
+for iage = 1
   for isub = 1:length(SUBJ{iage})
     cfg.SUBJ = SUBJ{iage}{isub};
     for icond = 1:2
@@ -93,15 +93,15 @@ else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 
 end
 return
 
-%% Merge mse files across subjects and cond
+%% Merge mse files subjects and cond
 evoked = 'subtract'; % subtract_avgref subtract
 csd = ''; % csd
-runperblock = 'no';
+runperblock = 'yes';
 
-eeg = [];
+eeg = []; trialinfo_trl = {};
 for iage = 1:2
-  mse_tmp = {}; freq_tmp = {}; freq_tmp_bl = {}; timelock_tmp = {};
-  trialinfo = []; trialinfo_trl = {}; trialinfo_blocks = {};
+  mse_tmp = {}; freq_tmp = {}; freq_tmp_bl = {}; timelock_tmp = {}; mse_blocks = {};
+  trialinfo = [];  trialinfo_blocks = {};
   for isub = 1:length(SUBJ{iage})
     for icond = 1:2
       path = fullfile(datapath, age_groups{iage}, 'mse', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ{iage}{isub}, icond));
@@ -110,8 +110,12 @@ for iage = 1:2
       mse.powspctrm = mse.sampen;
       mse.dimord = 'chan_freq_time';
       mse_tmp{isub,icond} = mse;
+      % button1ind = mse.trialinfo(:,5) == 65 | mse.trialinfo(:,5) == 70; % high conf
+      button1ind = mse.trialinfo(:,5) == 65 | mse.trialinfo(:,5) == 68; % left? button
+      mse.trialinfo(button1ind,9) = 1;
+      mse.trialinfo(~button1ind,9) = 0;
       trialinfo(isub,:,icond) = mean(mse.trialinfo);
-      trialinfo_trl{isub,icond} = mse.trialinfo;
+      trialinfo_trl{iage}{isub,icond} = mse.trialinfo;
 
       path = fullfile(datapath, age_groups{iage}, 'freq', evoked, csd, sprintf('SUB%s_cond%d.mat', SUBJ{iage}{isub}, icond));
       disp(path);      load(path)
@@ -122,7 +126,7 @@ for iage = 1:2
       disp(path);      load(path)
       timelock_tmp{isub,icond} = timelock;
 
-      if strcmp(runperblock, 'yes')
+      if strcmp(runperblock, 'yes') && iage == 1
         path = fullfile(datapath, age_groups{iage},  'mse', evoked, csd, sprintf('SUB%s_cond%d_blocks.mat', SUBJ{iage}{isub}, icond));
         disp(path);    load(path)
         for iblock=1:length(mse)
@@ -133,15 +137,21 @@ for iage = 1:2
         end
         cfg=[];        cfg.appenddim = 'rpt';
         mse_blocks{isub,icond} = ft_appendfreq(cfg, mse{:}); 
+        [~,~,res] = regress(mse_blocks{isub,icond}.trialinfo(:,3), [mse_blocks{isub,icond}.trialinfo(:,6) ones(size(mse_blocks{isub,icond}.trialinfo,1),1)]);
+        mse_blocks{isub,icond}.trialinfo(:,9) = res; % accuracy cleaned from delta_f         
+        % mse_blocks{isub,icond}.trialinfo(:,10) = res; % K-factor?
+      else
+        % mse_blocks{isub,icond} = {};
       end
     end
   end
-  % combine mse
+  % combine mse  
   cfg=[];         cfg.keepindividual = 'yes';
   mse_merged{1} = ft_freqgrandaverage(cfg, mse_tmp{:,1});
   mse_merged{2} = ft_freqgrandaverage(cfg, mse_tmp{:,2});
   cfg.keepindividual = 'no';
   mse_merged{3} = ft_freqgrandaverage(cfg, mse_merged{1:2});
+  % mse_blocks = cellfun(@(x,y)ft_freqgrandaverage(cfg, x, y), mse_blocks(:,1), mse_blocks(:,2));
 
   cfg=[];       cfg.operation = 'subtract';     cfg.parameter = 'powspctrm';
   mse_merged{4} = ft_math(cfg, mse_merged{1}, mse_merged{2});
@@ -164,18 +174,22 @@ for iage = 1:2
   freq_merged{4} = ft_math(cfg, freq_merged{1}, freq_merged{2});
   freq_merged_bl{4} = ft_math(cfg, freq_merged_bl{1}, freq_merged_bl{2});
   % add behavior
-  freq_merged{1}.trialinfo = trialinfo(:,:,1);    freq_merged{2}.trialinfo = trialinfo(:,:,2);
-  freq_merged{3}.trialinfo = mean(trialinfo, 3);  freq_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
-  freq_merged_bl{1}.trialinfo = trialinfo(:,:,1);    freq_merged_bl{2}.trialinfo = trialinfo(:,:,2);
-  freq_merged_bl{3}.trialinfo = mean(trialinfo, 3);  freq_merged_bl{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
+  freq_merged{1}.trialinfo = trialinfo(:,:,1);    
+  freq_merged{2}.trialinfo = trialinfo(:,:,2);
+  freq_merged{3}.trialinfo = mean(trialinfo, 3);  
+  freq_merged{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
+  freq_merged_bl{1}.trialinfo = trialinfo(:,:,1);    
+  freq_merged_bl{2}.trialinfo = trialinfo(:,:,2);
+  freq_merged_bl{3}.trialinfo = mean(trialinfo, 3);  
+  freq_merged_bl{4}.trialinfo = trialinfo(:,:,1) - trialinfo(:,:,2);
 
   % combine timelock
   cfg=[];        cfg.keepindividual = 'yes';
   timelock_merged{1} = ft_timelockgrandaverage(cfg, timelock_tmp{:,1});
   timelock_merged{2} = ft_timelockgrandaverage(cfg, timelock_tmp{:,2});
   % cfg.keepindividual = 'no';
-  % cfg.parameter = 'individual';
-  % timelock_merged{3} = ft_timelockgrandaverage(cfg, timelock_merged{1:2});
+  % cfg.parameter = 'avg';
+  timelock_merged{3} = ft_timelockgrandaverage([], ft_timelockanalysis([],timelock_merged{1}), ft_timelockanalysis([],timelock_merged{2}));
   cfg=[];      cfg.operation = 'subtract';       cfg.parameter = 'individual';
   timelock_merged{4} = ft_math(cfg, timelock_merged{1}, timelock_merged{2});
   % add behavior
@@ -188,12 +202,22 @@ for iage = 1:2
   eeg(iage).freq = freq_merged;
   eeg(iage).freq_bl = freq_merged_bl;
   eeg(iage).mse = mse_merged;
+  eeg(iage).mse_blocks = mse_blocks;
 end
-
+% collapse age groups: hacked append_common line 295: subj_chan_freq_time subj_chan_time
+% missing
+cfg=[]; cfg.appenddim = 'rpt'; 
+for icond=1:4
+  % cfg.parameter = 'powspctrm';
+  eeg(3).mse{icond} = ft_appendfreq(cfg, eeg(1).mse{icond}, eeg(2).mse{icond});
+  eeg(3).freq{icond} = ft_appendfreq(cfg, eeg(1).freq{icond}, eeg(2).freq{icond});
+  eeg(3).freq_bl{icond} = ft_appendfreq(cfg, eeg(1).freq_bl{icond}, eeg(2).freq_bl{icond});
+  eeg(3).timelock{icond} = ft_appendtimelock(cfg, eeg(1).timelock{icond}, eeg(2).timelock{icond});
+end
 %% plot ERPs
 cfg=[];   cfg.layout = lay;
 % cfg.baseline = [-0.5 0];    cfg.baselinetype = 'relchange';
-ft_multiplotER(cfg, timelock_merged{1}, timelock_merged{2}); colorbar
+ft_multiplotER(cfg, eeg(1).timelock{3}, eeg(2).timelock{3}); colorbar
 %% plot TFR / topo MSE
 cfg=[];   cfg.layout = lay;
 % cfg.zlim = 'maxabs';
@@ -201,35 +225,77 @@ cfg=[];   cfg.layout = lay;
 % cfg.xlim = [-0.5 1.5];
 % cfg.baseline = [-0.5 0];    cfg.baselinetype = 'relchange';
 cfg.colorbar = 'yes';
-ft_multiplotTFR(cfg, mse_merged{3}); colorbar
+ft_multiplotTFR(cfg,eeg(2).mse{3}); colorbar
 %% plot TFR / topo freq
 cfg=[];   cfg.layout = lay; cfg.zlim = 'maxabs'; % cfg.xlim = [-0.5 1.5];
-ft_multiplotTFR(cfg, freq_merged{3}); colorbar
+ft_multiplotTFR(cfg, eeg(2).freq{3}); colorbar
 %% plot time courses
 cfg=[];   cfg.layout = lay;
 cfg.frequency = [4 8 ];
 ft_multiplotER(cfg,freq_merged{1:2})
 
+%% plot behavior
+behav = []; 
+behav.accuracy = {eeg(1).mse{1}.trialinfo(:,3) eeg(1).mse{2}.trialinfo(:,3)};
+behav.RT = {eeg(1).mse{1}.trialinfo(:,4) eeg(1).mse{2}.trialinfo(:,4)};
+behav.bias = {eeg(1).mse{1}.trialinfo(:,9) eeg(1).mse{2}.trialinfo(:,9)};
+
+f = figure;
+subplot(2,3,1)
+b=bar(mean([behav.accuracy{:}])); hold on; ylim([0.5 0.95]); b.FaceColor = [0.85 0.85 0.85];
+catIdx = [zeros(28,1) ones(28,1)];
+plot([1 2], [behav.accuracy{:}], 'Color', [0.5 0.5 0.5])
+plotSpread_incmarkersz(behav.accuracy, 'categoryIdx',catIdx, 'categoryColors',{'b','r'})
+title('Accuracy'); ax=gca; ax.XTickLabel = {'Incongruent' 'Congruent'}; ylabel('Proportion correct') % ax.XTickLabelRotation = 45
+[h,p] = ttest([behav.accuracy{1}], [behav.accuracy{2}]);
+sigstar({[1,2]}, p)
+% dots = get(h{1}(end)) % dots.MarkerFaceColor = 'r'; % dots.MarkerEdgeColor = [1 1 1];% dots.MarkerSize = 80;
+
+subplot(2,3,2)
+b=bar(mean([behav.RT{:}])); hold on; b.FaceColor = [0.85 0.85 0.85];
+catIdx = [zeros(28,1) ones(28,1)];
+plot([1 2], [behav.RT{:}], 'Color', [0.5 0.5 0.5])
+plotSpread_incmarkersz(behav.RT, 'categoryIdx',catIdx, 'categoryColors',{'b','r'})
+title('Reaction Time'); ylabel('Mean RT (s)'); ax=gca; ax.XTickLabel = {'Incongruent' 'Congruent'}; 
+[h,p] = ttest([behav.RT{1}], [behav.RT{2}]);
+sigstar({[1,2]}, p)
+
+subplot(2,3,3)
+b=bar(mean([behav.bias{:}])); hold on; b.FaceColor = [0.85 0.85 0.85]; ylim([0 0.9]); 
+catIdx = [zeros(28,1) ones(28,1)];
+plot([1 2], [behav.bias{:}], 'Color', [0.5 0.5 0.5])
+plotSpread_incmarkersz(behav.bias, 'categoryIdx',catIdx, 'categoryColors',{'b','r'})
+title('Response Bias'); ylabel('Proportion Button "Decrease"'); ax=gca; ax.XTickLabel = {'Incongruent' 'Congruent'}; 
+[h,p] = ttest([behav.bias{1}], [behav.bias{2}]);
+sigstar({[1,2]}, p)
+
+orient portrait
+saveas(f, fullfile(plotpath, 'behavior.pdf')) % '_' age_groups{iage}
+saveas(f, fullfile(plotpath, 'behavior.png')) % '_' age_groups{iage}
+cd(plotpath)
+
+% plotSpread({behav.accuracy})
+
 %% plot Central pooling mse
 close all
-XLIM = [-0.5 1.5];
+XLIM = [-0.5 1.25];
 zlim = [1.15 1.23];
 % zlim = [1.05 1.14];
 % channel = {'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'C2', 'Cz', 'C1', 'C3', 'F3', 'F1'};
 % channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP1'}; % CSD
 % channel = {'FC2', 'FCz', 'FC1', 'C1', 'Cz', 'C2'}; % avg ref 'C3',
-channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP2', 'CPz', 'CP1'}
-channel = {'FCz', 'FC1', 'C1', 'Cz', 'CPz', 'CP1'}
+% channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP2', 'CPz', 'CP1'}
 % channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP2', 'CPz', 'CP1'} % for csd
 channel = {'FC2', 'FCz', 'FC1',  'C1', 'Cz', 'C2'} % for avgref  'C3', , 'CP2', 'CPz', 'CP1'
 channel_freq = {'FCz',  'Cz', 'CPz', 'CP1'}; %   'CP3' 'C1',
+% channel = {'C3', 'C4', 'C6', 'CP6', 'CP3', 'CP5'}; % OA mse peak
 
 f = figure; f.Position = [680         520        800         922];
 % TFR mse 
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf'; cfg.channel = channel;  cfg.zlim = [1.15 1.23];  cfg.xlim = XLIM; cfg.title = ['Entropy YA'];
 subplot(6,3,1);     ft_singleplotTFR(cfg, eeg(1).mse{3}); xline(0); ylabel('Time scale (ms)')
 cfg.zlim = [1.05 1.14]; cfg.title = ['Entropy OA'];
-subplot(6,3,4);     ft_singleplotTFR(cfg, eeg(2).mse{3}); xline(0); xlabel('Time from stim (s)'); ylabel('Time scale (ms)')
+subplot(6,3,4);     ft_singleplotTFR(cfg, eeg(2).mse{3}); xline(0); ylabel('Time scale (ms)')
 % topo
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf'; cfg.xlim = [0 0.3];   cfg.ylim = [70 90];   cfg.zlim = zlim; cfg.highlightchannel = channel; cfg.highlight = 'on';%cfg.zlim = [1.17 1.22];
 subplot(6,3,2);     ft_topoplotTFR(cfg, eeg(1).mse{3}); %colorbar
@@ -238,39 +304,48 @@ subplot(6,3,5);     ft_topoplotTFR(cfg, eeg(2).mse{3}); %colorbar
 % time series
 cfg=[];    cfg.figure = 'gcf';  cfg.channel = channel; cfg.title = ' ';  cfg.xlim = XLIM;
 subplot(6,3,3);     ft_singleplotER(cfg, eeg(1).mse{1:2}); hold on; xline(0,'HandleVisibility','off');
+ylabel('Entropy')
 subplot(6,3,6);     ft_singleplotER(cfg, eeg(2).mse{1:2}); hold on; xline(0,'HandleVisibility','off');
-legend({'Incong.', 'Cong.'}, 'Location', 'South'); legend boxoff
-xlabel('Time from stim (s)'); ylabel('Entropy')
+legend({'Incong.', 'Cong.'}, 'Location', 'South'); legend boxoff;  ylabel('Entropy')
 % ax=gca; YL = ax.YLim; patch([0; 0; 0.46; 0.46], [YL(1); YL(2); YL(2); YL(1);], [0.5 0.5 0.5 ])
 
-% plot Central pooling freq
+% TFR freq
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';   cfg.channel = channel;
 cfg.xlim = XLIM; cfg.ylim = [0 100]; cfg.zlim = [-0.17 0.17]; cfg.title = 'Power modulation YA';
-subplot(6,3,7); ft_singleplotTFR(cfg, eeg(1).freq_bl{3}); xline(0); xlabel('Time from stim (s)'); ylabel('Frequency (Hz)')
+subplot(6,3,7); ft_singleplotTFR(cfg, eeg(1).freq_bl{3}); xline(0); ylabel('Frequency (Hz)')
 cfg.title = 'Power modulation OA';
-subplot(6,3,10); ft_singleplotTFR(cfg, eeg(2).freq_bl{3}); xline(0); xlabel('Time from stim (s)'); ylabel('Frequency (Hz)')
-
+subplot(6,3,10); ft_singleplotTFR(cfg, eeg(2).freq_bl{3}); xline(0); ylabel('Frequency (Hz)'); xlabel('Time from stim (s)');
+% topo freq
 cfg=[]; cfg.layout = lay;   cfg.figure = 'gcf'; cfg.highlightchannel = channel; cfg.highlight = 'on';
 cfg.xlim = [0.2 0.4];   cfg.ylim = [4 8];    cfg.zlim = 'maxabs';
 % cfg.xlim = [0.1 1.5];   cfg.ylim = [60 80];    cfg.zlim = 'maxabs';
 subplot(6,3,8); ft_topoplotTFR(cfg, eeg(1).freq_bl{3}); %colorbar;
 subplot(6,3,11); ft_topoplotTFR(cfg, eeg(2).freq_bl{3}); %colorbar;
-
+% time course freq
 cfg=[]; cfg.figure = 'gcf'; cfg.channel = channel; cfg.title = ' ';  cfg.frequency = [4 8]; cfg.xlim = XLIM;
-% cfg=[]; cfg.figure = 'gcf'; cfg.channel = channel_freq; cfg.title = ' ';  cfg.frequency = [60 80];  cfg.xlim = XLIM;
-subplot(6,3,9); ft_singleplotER(cfg, eeg(1).freq_bl{1:2});
+subplot(6,3,9); ft_singleplotER(cfg, eeg(1).freq_bl{1:2}); ylabel('Power (% signal change)'); xline(0); % %shg
 subplot(6,3,12); ft_singleplotER(cfg, eeg(2).freq_bl{1:2});
 xline(0,'HandleVisibility','off'); % legend({'Incong.', 'Cong.'}, 'Location', 'Southeast'); legend boxoff
 xlabel('Time from stim (s)'); ylabel('Power (% signal change)'); % %shg
-
+%freq spectrum YA and OA
+cfg=[]; cfg.latency = [-0.5 0]; cfg.avgovertime = 'yes'; cfg.avgoverchan = 'yes'; cfg.channel = channel;
+powYA=ft_selectdata(cfg, eeg(1).freq{3}); powYA = rmfield(powYA, 'time');  
+powOA=ft_selectdata(cfg, eeg(2).freq{3}); powOA = rmfield(powOA, 'time');  
+subplot(6,3,13); % cfg=[]; cfg.figure = 'gcf'; cfg.parameter = 'powspctrm'; ft_singleplotER(cfg, powYA); ft_singleplotER(cfg, powOA)
+plot(powYA.freq, squeeze(mean(powYA.powspctrm))); hold on; plot(powOA.freq, squeeze(mean(powOA.powspctrm))); xlim([0 50]); ylabel('Power'); legend(age_groups); xlabel('Frequency (Hz)'); legend boxoff; 
+subplot(6,3,14); cfg=[]; cfg.figure = 'gcf'; cfg.parameter = 'avg'; cfg.xlim = [0.1 0.1]; cfg.zlim = 'maxabs'; cfg.layout = lay;  cfg.highlightchannel = channel; cfg.highlight = 'on';
+ft_topoplotER(cfg, ft_timelockanalysis([], eeg(3).timelock{3}))
+subplot(6,3,15); cfg=[]; cfg.figure = 'gcf'; cfg.parameter = 'avg';  cfg.channel = channel; cfg.xlim = [-0.5 1.25];
+ft_singleplotER(cfg, ft_timelockanalysis([], eeg(1).timelock{3}), ft_timelockanalysis([], eeg(2).timelock{3})); xline(0); legend(age_groups); legend boxoff; xlabel('Time from stim (s)'); ylabel('millivolt?')
 orient portrait
 saveas(f, fullfile(plotpath, ['msevsfreq_' [channel{:}] ]), 'pdf') % '_' age_groups{iage}
 saveas(f, fullfile(plotpath, ['msevsfreq_' [channel{:}] ]), 'png') % '_' age_groups{iage}
 
 %% run stats: correlation mMSE vs behavior TODO correlate overall entropy vs delta_f!
-behav_col=3;% 3 is accuracy,6 is delta_fsemitones
-% corrtype='Pearson'; % Spearman Pearson
-corrtype='Spearman'; % Spearman Pearson
+behav_col=3;% 3 is accuracy, 6 is delta_fsemitones
+iage=1;
+corrtype='Pearson'; % Spearman Pearson
+% corrtype='Spearman'; % Spearman Pearson
 cond_leg = {'Incong.', 'Congr.', 'Cong. avg', 'Incong–Congr.'};
 colors = {'r' 'b' 'g'};
 ctrl_band = [4 8]; % 4 8 1 3
@@ -278,28 +353,34 @@ cfg = []; cfg.method = 'triangulation'; cfg.layout = lay;
 neighbours = ft_prepare_neighbours(cfg); % cfg.neighbours = neighbours; ft_neighbourplot(cfg)
 
 clear pl; f=figure; f.Position = [  350   250   400   400];
-for icond = 4%1:4
-  % get 2-8 Hz power to control for
-  cfg=[]; cfg.frequency = ctrl_band; cfg.latency = [-0.1 0.1]; cfg.channel = channel; cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
-  freq_control = ft_selectdata(cfg, freq_merged{icond});
+for icond = 4 %1:4
+  % get 4-8 Hz power to control for
+  cfg=[]; cfg.frequency = ctrl_band; cfg.latency = [0.1 0.3]; cfg.channel = channel; cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
+  freq_control = ft_selectdata(cfg, eeg(iage).freq_bl{icond});
 
-  cfg=[]; cfg.design = mse_merged{icond}.trialinfo(:,behav_col); %
+  % hitrate1 = eeg(iage).mse{1}.trialinfo(:,behav_col)
+  % hitrate2 = eeg(iage).mse{2}.trialinfo(:,behav_col)
+  % design = log(1-hitrate1)./log(1-hitrate2);
+  design = eeg(iage).mse{icond}.trialinfo(:,behav_col); 
+  cfg=[]; cfg.design = design;  
   cfg.frequency = [60 100]; cfg.avgoverfreq = 'yes';
   cfg.channel = channel;    cfg.avgoverchan = 'yes';
-  cfg.latency = [-0.2 1.0];
+  cfg.latency = [-0.5 1.25];
   cfg.statistic = 'ft_statfun_partialcorrelationT';  %ft_statfun_correlationT depsamplesT ft_statfun_correlationT_corrcol
   cfg.type = corrtype;
   cfg.correctm = 'cluster';  %'no'
   cfg.numrandomization = 10000; cfg.uvar=[]; cfg.ivar = 1; cfg.method = 'montecarlo'; cfg.clusteralpha = 0.05; cfg.clusterstatistic = 'maxsum'; cfg.tail = 0; cfg.clustertail = 0;  cfg.spmversion = 'spm8'; cfg.neighbours       = neighbours;
   cfg.alpha = 0.025;
-  corrstat_mse = ft_freqstatistics(cfg, mse_merged{icond}); % incong - cong
+  corrstat_mse = ft_freqstatistics(cfg, eeg(iage).mse{icond}); % incong - cong
 
-  cfg.design = [mse_merged{icond}.trialinfo(:,behav_col) freq_control.powspctrm]; % control for theta
-  corrstat_mse_control = ft_freqstatistics(cfg, mse_merged{icond}); % incong - cong
+  cfg.design = [design freq_control.powspctrm]; % control for theta
+  % cfg.design = [design eeg(iage).mse{icond}.trialinfo(:,6)]; % control for delta_f
+  corrstat_mse_control = ft_freqstatistics(cfg, eeg(iage).mse{icond}); % incong - cong
 
   cfg.frequency = ctrl_band; % straight corr theta vs behav
-  cfg.design = mse_merged{icond}.trialinfo(:,behav_col);
-  corrstat_freq = ft_freqstatistics(cfg, freq_merged{icond}); % incong - cong
+  % cfg.design = eeg(iage).mse{icond}.trialinfo(:,behav_col);
+  cfg.design = design;
+  corrstat_freq = ft_freqstatistics(cfg, eeg(iage).freq_bl{icond}); % incong - cong
 
   % plot corr time series and scatter for significant part
   subplot(1,1,1);hold on;
@@ -315,8 +396,8 @@ orient landscape
 saveas(f, fullfile(plotpath, sprintf('Corr_percond%s.pdf', cond_leg{icond})), 'pdf')
 saveas(f, fullfile(plotpath, sprintf('Corr_percond%s.png', cond_leg{icond})), 'png')
 
-% % plot Incong-Cong inc controls + scatter
-icond=4;
+%% plot Incong-Cong inc controls + scatter
+% icond=4;
 f=figure; f.Position = [  350   250   800   400]; clear pl
 subplot(1,2,1);hold on;
 pl(1) = plot(corrstat_mse.time, squeeze(corrstat_mse.rho),'Color', colors{1});  %
@@ -327,27 +408,28 @@ pl(2)=plot(squeeze(corrstat_mse_control.time), squeeze(corrstat_mse_control.rho)
 plot_sig_bar(corrstat_mse_control.time, squeeze(corrstat_mse_control.mask)', -0.35, 5, pl(2).Color)
 pl(3)=plot(squeeze(corrstat_freq.time), squeeze(corrstat_freq.rho), 'Color', colors{3}); xline(0); yline(0);
 plot_sig_bar(corrstat_freq.time, squeeze(corrstat_freq.mask)', -0.45, 5, pl(3).Color);
-text(0.3, -0.3, 'p<0.05, corrected')
+% text(0.3, -0.3, 'p<0.05, corrected')
 legend(pl, {'Entropy v. behav' 'Entropy v. behav controlled for 4-8Hz' '4-8 Hz power v. behav'}, 'Location', 'southoutside')
 xlabel('Time from stim (s)'); ylabel([corrtype ' correlation'])
-% xlim(cfg.latency)
+xlim([-0.3 1.25]);
+ax=gca; ax.XTick = -0.5:0.5:1.5; ax.YTick = [-0.5:0.25:0.5];
 
 % scatter
-cfg=[]; cfg.channel = channel; cfg.latency = [0.1 0.3]; cfg.frequency = [60 100]; %[70.027211 142.952381];
-% cfg=[]; cfg.channel = channel; cfg.latency = [0.5 0.5]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+cfg=[]; cfg.channel = channel; cfg.latency = [0.1 0.1]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+% cfg=[]; cfg.channel = channel; cfg.latency = [0.7 0.7]; cfg.frequency = [60 100]; %[70.027211 142.952381];
 % cfg=[]; cfg.channel = channel; cfg.latency = [1 1.2]; cfg.frequency = [60 100]; %[70.027211 142.952381];
 cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
-corrdat = ft_selectdata(cfg, mse_merged{icond});
+corrdat = ft_selectdata(cfg, eeg(iage).mse{icond});
 subplot(1,2,2);
-scatter(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), 100, 'MarkerEdgeColor',[1 1 1],...
+scatter(corrdat.powspctrm , design, 100, 'MarkerEdgeColor',[1 1 1],...
   'MarkerFaceColor',[0 0 0], 'LineWidth',1.5);
-% scatter(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), 100, 'MarkerEdgeColor',[1 1 1],...
+% scatter(corrdat.powspctrm , design, 100, 'MarkerEdgeColor',[1 1 1],...
 %   'MarkerFaceColor',[0 0 0], 'LineWidth',1.5, 'Marker', '.');
-% text(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), SUBJ)
-xlabel('Incongruent–congruent mMSE');    ylabel('Incongruent–congruent Accuracy')
-[rho, p] = corr(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), 'type', corrtype);
+% text(corrdat.powspctrm, design, SUBJ{iage})
+xlabel('Incongruent–congruent mMSE');    ylabel('K-factor Incongruent vs congruent')
+[rho, p] = corr(corrdat.powspctrm , design, 'type', corrtype);
 % control for theta
-[rho_p, p_p] = partialcorr(corrdat.powspctrm , mse_merged{icond}.trialinfo(:,behav_col), freq_control.powspctrm, 'type', corrtype);
+[rho_p, p_p] = partialcorr(corrdat.powspctrm, design, freq_control.powspctrm, 'type', corrtype);
 % title(sprintf('r = %.2f, p = %1.3f\ncontrolled for theta: r = %.2f, p = %1.3f', rho, p, rho_p, p_p));
 title(sprintf('%g-%g s, r = %.2f p = %.3f\ncontrolled for theta: r = %.2f p = %.3f',  cfg.latency, rho, p, rho_p, p_p));
 lsline; box on; axis square
@@ -360,49 +442,147 @@ cfg=[];    cfg.layout = lay; cfg.parameter = 'rho'; cfg.colorbar = 'yes'; cfg.zl
 ft_multiplotTFR(cfg, corrstat_mse)
 %% plot delta+f over time, check staircase convergence, use cleaned data
 % figure; plot(cleaned.trialinfo(:,6))
-f=figure;
-for isub = 1:length(SUBJ)
-  for icond = 1:2
-    subplot(5,7,isub); hold on
-    plot(trialinfo_trl{isub,icond}(:,6))
-    title(SUBJ{iage}{isub})
+for iage = 1:2
+  f=figure;
+  for isub = 1:length(SUBJ{iage})
+    for icond = 1:2
+      subplot(5,7,isub); hold on
+      plot(trialinfo_trl{iage}{isub,icond}(:,6))
+      title(SUBJ{iage}{isub})
+    end
   end
 end
+%% repeated measures correlation % TODO make table, colums:
+% subj#, block#, 
+% mse, mse_i, mse_c, mse_i-c,    
+% acc, acc_i, acc_c, acc_i-c,
+% deltaf, deltaf_i, deltaf_c, deltaf_i-c,
+t = table();
 
-%% repeated measures correlation
 % get mse for time scales and chans and times of interest
 cfg=[];
 cfg.frequency = [60 100];  cfg.avgoverfreq = 'yes';
 cfg.channel = channel';    cfg.avgoverchan = 'yes';
-cfg.latency = [0.1 0.3];   cfg.avgovertime = 'yes';
-mse_sel = cellfun(@(x) ft_selectdata(cfg, x), mse_blocks);
-% % only keep subjects > 3 runs
-% mse_nruns = arrayfun(@(x) size(x.powspctrm,1), mse_sel(:,1));
-% mse_sel = mse_sel(mse_nruns > 3,:);
+cfg.latency = [0.1 0.1];   cfg.avgovertime = 'yes';
+mse_sel = cellfun(@(x) ft_selectdata(cfg, x), eeg(1).mse_blocks); % i and c
+mse_nruns = arrayfun(@(x) size(x.powspctrm,1), mse_sel(:,1));
+% mse_sel = mse_sel(mse_nruns > 5,:); % only keep subjects > 5 runs DO LATER in table
 
+SUBJno = [];  blockno =[]; nruns =[];
+for isub = 1:length(SUBJ{1})
+  for iblock = 1:mse_nruns(isub)
+    SUBJno(end+1,1) = isub;
+    blockno(end+1,1) = iblock;
+    nruns(end+1,1) = mse_nruns(isub);
+  end
+end
+t = table();   t.SUBJno = SUBJno;    t.blockno = blockno;   t.nblocks = nruns;
+t.mse_i = vertcat(mse_sel(:,1).powspctrm);
+t.mse_c = vertcat(mse_sel(:,2).powspctrm);
+t.mse = mean([t.mse_i t.mse_c],2);
+t.mse_ivsc = t.mse_i - t.mse_c;
+t.acc_i = vertcat(mse_sel(:,1).trialinfo); t.acc_i = t.acc_i(:,3);
+t.acc_c = vertcat(mse_sel(:,2).trialinfo); t.acc_c = t.acc_c(:,3);
+t.acc = mean([t.mse_i t.mse_c],2);
+t.acc_ivsc = t.acc_i - t.acc_c;
+t.deltaf_i = vertcat(mse_sel(:,1).trialinfo); t.deltaf_i = t.deltaf_i(:,6);
+t.deltaf_c = vertcat(mse_sel(:,2).trialinfo); t.deltaf_c = t.deltaf_c(:,6);
+t.deltaf = mean([t.deltaf_i t.deltaf_c],2);
+t.deltaf_ivsc = t.deltaf_i - t.deltaf_c;
+
+% tbl = table(R_MODELLING_STAFF(:,6),R_MODELLING_STAFF(:,11),
+% nominal(R_MODELLING_STAFF(:,10)),nominal(R_MODELLING_STAFF(:,12)),
+% nominal(R_MODELLING_STAFF(:,13)),R_MODELLING_STAFF(:,8),R_MODELLING_STAFF(:,1),
+% 'VariableNames',{'CWA', 'DELTA_F','Congruency','Side','Role','ID','prestim_alpha'});
+% m_CWA = fitlme(tbl,'CWA~DELTA_F+Congruency*Side*Role+(1|ID)')
+% m_CWA = fitlme(tbl,'acc_ivsc~deltaf+Congruency*Side*Role+(1|SUBJno)')
+
+% not needed
 % take difference for mse
-cfg=[];
-cfg.operation = 'subtract';
+cfg=[];      cfg.operation = 'subtract';
 cfg.parameter = 'powspctrm';
-mse_sel_diff = arrayfun(@(x,y) ft_math(cfg, x,y), mse_sel(:,1), mse_sel(:,2));
-% demean
-mse_sel_diff_demean = cellfun(@(x) x-mean(x), {mse_sel_diff.powspctrm}, 'UniformOutput',false);
-% mse_sel_diff_demean = cellfun(@(x) x, {mse_sel_diff.powspctrm}, 'UniformOutput',false);
-msedat = vertcat(mse_sel_diff_demean{:});
-
-% take difference for accuracy
-cfg=[];
-cfg.operation = 'subtract';
-cfg.parameter = 'trialinfo';
+mse_sel_diff   = arrayfun(@(x,y) ft_math(cfg, x,y), mse_sel(:,1), mse_sel(:,2));
+cfg.parameter = 'trialinfo'; 
+% cfg.operation = 'log(1-x1)./log(1-x2)';
 behav_sel_diff = arrayfun(@(x,y) ft_math(cfg, x,y), mse_sel(:,1), mse_sel(:,2));
-%demean
+% % subtract mean
+mse_sel_diff_demean   = cellfun(@(x) x-mean(x), {mse_sel_diff.powspctrm}, 'UniformOutput',false);
 behav_sel_diff_demean = cellfun(@(x) x-mean(x), {behav_sel_diff.trialinfo}, 'UniformOutput',false);
-% behav_sel_diff_demean = cellfun(@(x) x, {behav_sel_diff.trialinfo}, 'UniformOutput',false);
-behavdat = vertcat(behav_sel_diff_demean{:});
-behavdat = behavdat(:,3);
+% behav_sel_diff_k_demean = cellfun(@(x) x-mean(x), {behav_sel_diff_k.trialinfo}, 'UniformOutput',false);
+% don't subtract, reproduce across subject corr
+% mse_sel_diff_demean   = cellfun(@mean, {mse_sel_diff.powspctrm}, 'UniformOutput',false);
+% behav_sel_diff_demean = cellfun(@mean, {behav_sel_diff.trialinfo}, 'UniformOutput',false);
+% get overall accuracy
+mse_sel_avgacc   = arrayfun(@(x) (x.trialinfo(:,3)), mse_sel, 'UniformOutput',false);
+mse_sel_avgacc(:,3) = cellfun(@(x,y) mean([x y],2), mse_sel_avgacc(:,1), mse_sel_avgacc(:,2), 'UniformOutput',false);
+% control for overall accuracy?
+% TODO put in table
 
-[r,p] = corr(msedat, behavdat, 'Type','Pearson')
+t = array2table(vertcat(behav_sel_diff_demean{:}), 'VariableNames', {'Cue' 'Speaker' 'Accuracy' 'RT' 'response' 'delta_f' 'jitter' 'congruency' 'Acc_delta_fregressed'});
+t.mse = vertcat(mse_sel_diff_demean{:});
+t.avgacc = vertcat(mse_sel_avgacc{:,3});
+t = rmoutliers(t,"mean");
 
-[r,p] = corr(msedat, behavdat, 'Type','Spearman')
-figure; scatter(msedat, behavdat); lsline
+%% plot
+% [~,~,behavdat] = regress(behavdat, staircasedat)
+[r,p] = corr(t.delta_f, t.Accuracy, 'Type','Pearson'); 
+figure; 
+subplot(2,4,1)
+scatter(t.delta_f, t.Accuracy); lsline; title(r)
+xlabel('delta_f'); ylabel('Accuracy')
+
+subplot(2,4,2)
+[r,p] = corr(t.mse, t.Accuracy, 'Type','Pearson')
+scatter(t.mse, t.Accuracy); lsline;  title(r)
+xlabel('mse'); ylabel('Accuracy')
+
+subplot(2,4,3)
+[r,p] = corr(t.mse, t.delta_f, 'Type','Pearson')
+scatter(t.mse, t.delta_f); lsline;  title(r)
+xlabel('mse'); ylabel('delta_f')
+
+subplot(2,4,4)
+[r,p] = corr(t.mse, t.Acc_delta_fregressed, 'Type','Pearson')
+scatter(t.mse, t.Acc_delta_fregressed); lsline;  title(r)
+xlabel('mse'); ylabel('Acc_delta_fregressed')
+
+subplot(2,4,5)
+[r,p] = partialcorr(t.mse, t.Accuracy, t.delta_f,'Type','Pearson')
+scatter(t.mse, t.Accuracy); lsline;  title(r)
+xlabel('mse'); ylabel('Acc')
+
+subplot(2,4,6)
+[r6,p6] = partialcorr(t.mse, t.Accuracy, [t.delta_f t.avgacc], 'Type','Pearson')
+scatter(t.mse, t.Accuracy); lsline;  title(r)
+xlabel('mse'); ylabel('Acc')
+
+
+%%
+coeff = cellfun(@(x,y) polyfit(x,y(:,3), 1), mse_sel_diff_demean, behav_sel_diff_demean, 'UniformOutput',false);
+coeff = cat(1, coeff{:});
+f = figure; axis square; axis tight; hold on; box on; f.Position = [  744   763   237   187 ];
+% scatter(t.mse, t.Accuracy); 
+hold on;
+xvals = [-0.1 0.1]; pl=[];
+for i=1:length(coeff)   
+  pl(i) = plot(xvals, polyval(coeff(i,:), xvals), 'Color', [0.5 0.5 0.5 ])
+end
+pl(end+1) = plot(xvals, polyval(mean(coeff), xvals), 'LineWidth', 3, 'Color', 'k')
+title(sprintf('r_p_a_r_t_i_a_l = %1.2f, p = %1.2f', r6, p6))
+xlabel('Incongruent–congruent mMSE')
+ylabel('Incongruent–congruent accuracy')
+legend(pl(end-1:end), {'Participants' 'Average'}); legend boxoff
+saveas(f, fullfile(plotpath, 'rmcorr_'), 'pdf') % '_' age_groups{iage}
+
+
+%%
+figure; 
+xvals = [-0.1 0.1];
+for i=1:length(coeff)
+  subplot(6,5,i); hold on
+  scatter(mse_sel_diff_demean{i}, behav_sel_diff_demean{i}(:,3)); lsline; % xlim([-0.1 0.1])
+  plot(xvals, polyval(coeff(i,:), xvals))
+
+  % title(SUBJ{iage})
+end
 

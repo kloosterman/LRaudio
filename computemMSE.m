@@ -21,6 +21,7 @@ switch sensor_or_source
     else
       age_group = 'OA';
       data = clean_task; clear clean_task
+      data.label = data.label'; 
     end
   case 'source'
     data = {};
@@ -77,12 +78,21 @@ if strcmp(age_group, 'YA')
   cfg.reref='no';
   cfg.implicitref='TP9';
   data = ft_preprocessing(cfg, data);
+  % data_old=data;
   disp 'make average reference'
   cfg=[];
   cfg.reref='yes';
   cfg.refchannel='all';
   % cfg.refchannel={'TP9', 'TP10'};
   data = ft_preprocessing(cfg, data);
+end
+if ismac && plotit
+    load('Acticap_64_UzL.mat')
+%   lay.label(find(contains(lay.label, 'Ref'))) = {'FCz'};
+  cfg = [];
+  cfg.layout = lay;
+  % ft_multiplotER(cfg, data_old)
+  ft_multiplotER(cfg, data)
 end
 
 disp 'reject trials with large variance' % last step, if avg ref messes trials up
