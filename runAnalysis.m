@@ -88,7 +88,7 @@ else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 
   %       'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 --partition long');
   % scales 10-40
   qsubcellfun(@computemMSE, cfglist, 'memreq', 10e9, 'timreq', 8*60*60, 'stack', 1, ...
-    'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 --partition long');
+    'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4'); %  --partition long
   %   else
   %     qsubcellfun(@computemMSE, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
   %       'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 ');
