@@ -31,14 +31,14 @@ for iage = 1:2
   end
   SUBJbool = true(size(SUBJ{iage}));
   if strcmp(age_groups{iage}, 'YA')
-    % SUBJbool([10, 12, 15, 17 ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
+    SUBJbool([10, 12, 15, 17 ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
     % exclude 37 10 and 15, 17 missing, 12 conditions missing,
     % #6 staircase not converging + datamissing, accuracy only 0.65
     % #31: staircase at max, accuracy only 0.6006
     % #33: staircase at max, accuracy only 0.6006
     % #3: staircase at minimum (0.01) in many trials
     % 34 sc at max until halfway, then drops, convergence weird?
-    SUBJbool([37, 10, 12, 15, 17,    31, 6, 3, 33 ]) = false;
+    % SUBJbool([37, 10, 12, 15, 17,    31, 6, 3, 33 ]) = false;
     % SUBJbool([37, 10, 12, 15, 17 ]) = false;
   else
     % 7 and 34 don't exist
