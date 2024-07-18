@@ -10,19 +10,14 @@ evoked = cfg.evoked;
 csd = cfg.csd;
 sensor_or_source = cfg.sensor_or_source;
 runperblock = cfg.runperblock;
+age_group = cfg.age_group;
 
 switch sensor_or_source
   case 'sensor'
     disp(datafile)
     load(datafile)
-    if exist('cleaned', 'var')
-      age_group = 'YA';
-      data = cleaned; clear cleaned
-    else
-      age_group = 'OA';
-      data = clean_task; clear clean_task
-      data.label = data.label'; 
-    end
+    data = clean_task;
+    data.label = data.label';
   case 'source'
     data = {};
     list = dir(datafile);
@@ -249,20 +244,24 @@ mkdir(fileparts(outpath))
 disp(outpath)
 save(outpath, 'freq', 'freq_bl')
 
+% cfg=[];
+% cfg.resamplefs = 50;
+% data = ft_resampledata(cfg, data);
+
 %mse analysis
 cfg = [];
 cfg.m = 2;
 cfg.r = 0.5;
 cfg.timwin = 0.5;
-cfg.toi = [-0.5 -0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 1.3 1.4 1.5 ]; % 1.6 1.7 1.8 1.9 2
-% cfg.toi = [-0.5];
-%     cfg.timescales = 1:40;
-cfg.timescales = 10:30;
+cfg.toi = [-0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 ]; % 1.6 1.7 1.8 1.9 2
+% cfg.toi = [0.1 0.2];
+    cfg.timescales = 1:40;
+% cfg.timescales = 1:8;
 %     cfg.timescales = 40;
 cfg.recompute_r = 'perscale_toi_sp';
 cfg.coarsegrainmethod = 'filtskip';
 cfg.filtmethod = 'lp';
-cfg.mem_available = 40e+09;
+cfg.mem_available = 20e+09;
 cfg.allowgpu = true;
 
 if strcmp(runperblock, 'yes')

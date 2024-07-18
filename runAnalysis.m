@@ -1,4 +1,4 @@
-restoredefaultpath
+restoredefaultpath; clear 
 global datapath
 if ismac
   datapath = '/Users/kloosterman/projectdata/LRaudio';
@@ -56,17 +56,20 @@ cfg.evoked = 'subtract'; % empty, regress, or subtract
 cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
 cfg.runperblock = 'no'; % empty for all together, or per block.
-for iage = 1
+for iage = 1:2
+  cfg.age_group = age_groups{iage};
   for isub = 1:length(SUBJ{iage})
     cfg.SUBJ = SUBJ{iage}{isub};
     for icond = 1:2
       cfg.icond = icond;
       switch cfg.sensor_or_source
         case 'sensor'
-          if strcmp(age_groups{iage}, 'YA')
-            cfg.datafile = fullfile(datapath,  age_groups{iage}, 'data', SUBJ{iage}{isub}, sprintf('clean_SUB%s.mat', SUBJ{iage}{isub}));
+          if strcmp(cfg.age_group, 'YA')
+            % cfg.datafile = fullfile(datapath,  age_groups{iage}, 'data', SUBJ{iage}{isub}, sprintf('clean_SUB%s.mat', SUBJ{iage}{isub}));
+            cfg.datafile = fullfile(datapath,  cfg.age_group, 'data', SUBJ{iage}{isub}, sprintf('STAFF_%s_clean_task_time-locked_to_cue.mat', SUBJ{iage}{isub}));
           else
-            cfg.datafile = fullfile(datapath,  age_groups{iage}, 'data', SUBJ{iage}{isub}, sprintf('NICOSA_%s_clean_task.mat', SUBJ{iage}{isub}));
+            % cfg.datafile = fullfile(datapath,  age_groups{iage}, 'data', SUBJ{iage}{isub}, sprintf('NICOSA_%s_clean_task.mat', SUBJ{iage}{isub}));
+            cfg.datafile = fullfile(datapath,  cfg.age_group, 'data', SUBJ{iage}{isub}, sprintf('NICOSA_%s_clean_task_time-locked_to_cue.mat', SUBJ{iage}{isub}));
           end
         case 'source'
           cfg.datafile = fullfile(datapath, 'source', SUBJ{iage}{isub}, sprintf('SourceTimeSeries_BW_1-100Hz_ParcelSpace_Block*.mat'));
@@ -279,30 +282,26 @@ cd(plotpath)
 %% plot Central pooling mse
 close all
 XLIM = [-0.5 1.25];
-zlim = [1.15 1.23];
-% zlim = [1.05 1.14];
-% channel = {'FC5', 'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'C2', 'Cz', 'C1', 'C3', 'F3', 'F1'};
-% channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP1'}; % CSD
-% channel = {'FC2', 'FCz', 'FC1', 'C1', 'Cz', 'C2'}; % avg ref 'C3',
-% channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP2', 'CPz', 'CP1'}
-% channel = {'FC2', 'FCz', 'FC1', 'C3', 'C1', 'Cz', 'C2', 'CP2', 'CPz', 'CP1'} % for csd
+% zlim = [1.15 1.23];
+zlim = [1.05 1.15];
 channel = {'FC2', 'FCz', 'FC1',  'C1', 'Cz', 'C2'} % for avgref  'C3', , 'CP2', 'CPz', 'CP1'
 channel_freq = {'FCz',  'Cz', 'CPz', 'CP1'}; %   'CP3' 'C1',
-% channel = {'C3', 'C4', 'C6', 'CP6', 'CP3', 'CP5'}; % OA mse peak
 
 f = figure; f.Position = [680         520        800         922];
 % TFR mse 
-cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf'; cfg.channel = channel;  cfg.zlim = [1.15 1.23];  cfg.xlim = XLIM; cfg.title = ['Entropy YA'];
+cfg=[];  cfg.layout = lay;   cfg.figure = 'gcf'; cfg.channel = channel;  cfg.xlim = XLIM; 
+cfg.zlim = [1.12 1.18]; cfg.title = ['Entropy YA'];
 subplot(6,3,1);     ft_singleplotTFR(cfg, eeg(1).mse{3}); xline(0); ylabel('Time scale (ms)')
-cfg.zlim = [1.05 1.14]; cfg.title = ['Entropy OA'];
+cfg.zlim = [1.05 1.15]; cfg.title = ['Entropy OA'];
 subplot(6,3,4);     ft_singleplotTFR(cfg, eeg(2).mse{3}); xline(0); ylabel('Time scale (ms)')
 % topo
-cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf'; cfg.xlim = [0 0.3];   cfg.ylim = [70 90];   cfg.zlim = zlim; cfg.highlightchannel = channel; cfg.highlight = 'on';%cfg.zlim = [1.17 1.22];
+cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';  cfg.highlightchannel = channel; cfg.highlight = 'on';%cfg.zlim = [1.17 1.22];
+cfg.xlim = [0 0.3];   cfg.ylim = [100 150];  cfg.zlim = zlim;
 subplot(6,3,2);     ft_topoplotTFR(cfg, eeg(1).mse{3}); %colorbar
-cfg.zlim = [1.04 1.13];
+cfg.zlim = zlim; %[1.04 1.13];
 subplot(6,3,5);     ft_topoplotTFR(cfg, eeg(2).mse{3}); %colorbar
 % time series
-cfg=[];    cfg.figure = 'gcf';  cfg.channel = channel; cfg.title = ' ';  cfg.xlim = XLIM;
+cfg=[];    cfg.figure = 'gcf';  cfg.channel = channel; cfg.xlim = XLIM; cfg.frequency = [100 150]; cfg.title = cfg.frequency;
 subplot(6,3,3);     ft_singleplotER(cfg, eeg(1).mse{1:2}); hold on; xline(0,'HandleVisibility','off');
 ylabel('Entropy')
 subplot(6,3,6);     ft_singleplotER(cfg, eeg(2).mse{1:2}); hold on; xline(0,'HandleVisibility','off');
@@ -330,10 +329,13 @@ xlabel('Time from stim (s)'); ylabel('Power (% signal change)'); % %shg
 %freq spectrum YA and OA
 cfg=[]; cfg.latency = [-0.5 0]; cfg.avgovertime = 'yes'; cfg.avgoverchan = 'yes'; cfg.channel = channel;
 powYA=ft_selectdata(cfg, eeg(1).freq{3}); powYA = rmfield(powYA, 'time');  
-powOA=ft_selectdata(cfg, eeg(2).freq{3}); powOA = rmfield(powOA, 'time');  
+powOA=ft_selectdata(cfg, eeg(2).freq{3}); powOA = rmfield(powOA, 'time');
+powYA.powspctrm = log(powYA.powspctrm);
+powOA.powspctrm = log(powOA.powspctrm);
 subplot(6,3,13); % cfg=[]; cfg.figure = 'gcf'; cfg.parameter = 'powspctrm'; ft_singleplotER(cfg, powYA); ft_singleplotER(cfg, powOA)
-plot(powYA.freq, squeeze(mean(powYA.powspctrm))); hold on; plot(powOA.freq, squeeze(mean(powOA.powspctrm))); xlim([0 50]); ylabel('Power'); legend(age_groups); xlabel('Frequency (Hz)'); legend boxoff; 
+plot(powYA.freq, squeeze(mean(powYA.powspctrm))); hold on; plot(powOA.freq, squeeze(mean(powOA.powspctrm))); xlim([0 100]); ylabel('Power'); legend(age_groups); xlabel('Frequency (Hz)'); legend boxoff; 
 subplot(6,3,14); cfg=[]; cfg.figure = 'gcf'; cfg.parameter = 'avg'; cfg.xlim = [0.1 0.1]; cfg.zlim = 'maxabs'; cfg.layout = lay;  cfg.highlightchannel = channel; cfg.highlight = 'on';
+
 ft_topoplotER(cfg, ft_timelockanalysis([], eeg(3).timelock{3}))
 subplot(6,3,15); cfg=[]; cfg.figure = 'gcf'; cfg.parameter = 'avg';  cfg.channel = channel; cfg.xlim = [-0.5 1.25];
 ft_singleplotER(cfg, ft_timelockanalysis([], eeg(1).timelock{3}), ft_timelockanalysis([], eeg(2).timelock{3})); xline(0); legend(age_groups); legend boxoff; xlabel('Time from stim (s)'); ylabel('millivolt?')
