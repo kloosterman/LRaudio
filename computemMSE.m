@@ -244,9 +244,9 @@ mkdir(fileparts(outpath))
 disp(outpath)
 save(outpath, 'freq', 'freq_bl')
 
-% cfg=[];
-% cfg.resamplefs = 50;
-% data = ft_resampledata(cfg, data);
+cfg=[];
+cfg.resamplefs = 50;
+data = ft_resampledata(cfg, data);
 
 %mse analysis
 cfg = [];
@@ -255,8 +255,8 @@ cfg.r = 0.5;
 cfg.timwin = 0.5;
 cfg.toi = [-0.4 -0.3 -0.2 -0.1 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1 1.1 1.2 ]; % 1.6 1.7 1.8 1.9 2
 % cfg.toi = [0.1 0.2];
-    cfg.timescales = 10:40;
-% cfg.timescales = 1:8;
+    % cfg.timescales = 10:40; % fsmaple 250
+cfg.timescales = 1:8; % fsample 50
 %     cfg.timescales = 40;
 cfg.recompute_r = 'perscale_toi_sp';
 cfg.coarsegrainmethod = 'filtskip';
