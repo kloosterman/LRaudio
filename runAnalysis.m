@@ -53,7 +53,7 @@ disp(SUBJ)
 overwrite = 1;
 cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
-cfg.csd = ''; % empty or csd
+cfg.csd = 'csd'; % empty or csd
 cfg.sensor_or_source = 'sensor';
 cfg.runperblock = 'no'; % empty for all together, or per block.
 for iage = 1:2
@@ -87,7 +87,7 @@ else % mse: 'memreq', 100e9, 'timreq', 23*60*60, 'options', ' --cpus-per-task=4 
   %     qsubcellfun(@computemMSE, cfglist, 'memreq', 100e9, 'timreq', 46*60*60, 'stack', 1, ...
   %       'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4 --partition long');
   % scales 10-40
-  qsubcellfun(@computemMSE, cfglist, 'memreq', 10e9, 'timreq', 8*60*60, 'stack', 1, ...
+  qsubcellfun(@computemMSE, cfglist, 'memreq', 20e9, 'timreq', 8*60*60, 'stack', 1, ...
     'StopOnError', false, 'backend', 'slurm', 'options', ' --cpus-per-task=4'); %  --partition long
   %   else
   %     qsubcellfun(@computemMSE, cfglist, 'memreq', 5e9, 'timreq', 1*60*60, 'stack', 1, ...
@@ -98,7 +98,7 @@ return
 
 %% Merge mse files subjects and cond
 evoked = 'subtract'; % subtract_avgref subtract
-csd = 'csd'; % csd or empty
+csd = ''; % csd or empty
 runperblock = 'yes';
 
 eeg = []; trialinfo_trl = {};
