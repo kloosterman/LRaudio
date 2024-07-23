@@ -99,7 +99,7 @@ return
 
 %% Merge mse files subjects and cond
 evoked = 'subtract'; % subtract_avgref subtract
-csd = 'csd'; % csd or empty
+csd = ''; % csd or empty
 runperblock = 'no';
 
 eeg = []; trialinfo_trl = {};
@@ -305,6 +305,7 @@ cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';  cfg.highlightchannel = channe
 cfg.xlim = [0 0.3];   cfg.ylim = [60 90];  cfg.zlim = zlim;
 subplot(6,3,2);     ft_topoplotTFR(cfg, eeg(1).mse{icond}); %colorbar
 cfg.zlim = [1.02 1.10];
+cfg.zlim = zlim;
 subplot(6,3,5);     ft_topoplotTFR(cfg, eeg(2).mse{icond}); %colorbar
 % time series
 cfg=[];    cfg.figure = 'gcf';  cfg.channel = channel; cfg.xlim = XLIM; cfg.frequency = [60 90]; cfg.title = cfg.frequency;
@@ -352,8 +353,8 @@ saveas(f, fullfile(plotpath, ['msevsfreq_' [channel{:}] ]), 'png') % '_' age_gro
 %% run stats: correlation mMSE vs behavior TODO correlate overall entropy vs delta_f!
 behav_col = 3;% 3 is accuracy, 6 is delta_fsemitones
 iage=1;
-% corrtype='Pearson'; % Spearman Pearson
-corrtype='Spearman'; % Spearman Pearson
+corrtype='Pearson'; % Spearman Pearson
+% corrtype='Spearman'; % Spearman Pearson
 cond_leg = {'Incong.', 'Congr.', 'Cong. avg', 'Incong–Congr.'};
 colors = {'r' 'b' 'g'};
 ctrl_band = [4 8]; % 4 8 1 3
@@ -371,14 +372,14 @@ for icond = 4 %1:4
   % design = log(1-hitrate1)./log(1-hitrate2);
   design = eeg(iage).mse{icond}.trialinfo(:,behav_col); 
   cfg=[]; cfg.design = design;  
-  cfg.frequency = [60 90]; cfg.avgoverfreq = 'yes';
+  % cfg.frequency = [60 90]; cfg.avgoverfreq = 'yes';
   % cfg.frequency = [100 148]; cfg.avgoverfreq = 'yes';
-  cfg.channel = channel;    cfg.avgoverchan = 'yes';
+  % cfg.channel = channel;    cfg.avgoverchan = 'yes';
   cfg.latency = [-0.2 1.25];
   cfg.statistic = 'ft_statfun_partialcorrelationT';  %ft_statfun_correlationT depsamplesT ft_statfun_correlationT_corrcol
   cfg.type = corrtype;
   cfg.correctm = 'cluster';  %'no'
-  cfg.numrandomization = 10000; cfg.uvar=[]; cfg.ivar = 1; cfg.method = 'montecarlo'; cfg.clusteralpha = 0.05; cfg.clusterstatistic = 'maxsum'; cfg.tail = 0; cfg.clustertail = 0;  cfg.spmversion = 'spm8'; cfg.neighbours       = neighbours;
+  cfg.numrandomization = 1000; cfg.uvar=[]; cfg.ivar = 1; cfg.method = 'montecarlo'; cfg.clusteralpha = 0.05; cfg.clusterstatistic = 'maxsum'; cfg.tail = 0; cfg.clustertail = 0;  cfg.spmversion = 'spm8'; cfg.neighbours       = neighbours;
   cfg.alpha = 0.025;
   corrstat_mse = ft_freqstatistics(cfg, eeg(iage).mse{icond}); % incong - cong
 
@@ -448,8 +449,9 @@ saveas(f, fullfile(plotpath, sprintf('Corr_ctrl%s.png', cond_leg{icond})), 'png'
 
 %% plot correlation
 cfg=[];    cfg.layout = lay; cfg.parameter = 'rho'; cfg.colorbar = 'yes'; cfg.zlim = 'maxabs';
-corrstat_mse.mask = double(corrstat_mse.posclusterslabelmat==2); cfg.maskparameter = 'mask';
+% corrstat_mse.mask = double(corrstat_mse.posclusterslabelmat==1); cfg.maskparameter = 'mask';
 ft_multiplotTFR(cfg, corrstat_mse)
+
 %% plot delta+f over time, check staircase convergence, use cleaned data
 % figure; plot(cleaned.trialinfo(:,6))
 for iage = 1:2
