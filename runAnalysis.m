@@ -38,11 +38,12 @@ for iage = 1:2
     % #33: staircase at max, accuracy only 0.6006
     % #3: staircase at minimum (0.01) in many trials
     % 34 sc at max until halfway, then drops, convergence weird?
-    SUBJbool([37, 10, 12, 15, 17,    31, 6, 3, 33 ]) = false;
+    % SUBJbool([37, 10, 12, 15, 17,    31, 6, 3, 33 ]) = false;
+    SUBJbool([37, 10, 12, 15, 17,    31, 6, 3, 33 , 20, 21, 23]) = false;
     % SUBJbool([37, 10, 12, 15, 17 ]) = false;
   else
     % 7 and 34 don't exist
-    SUBJbool([ 7, 34 ]) = false;
+    SUBJbool([ 7, 34, 9 ]) = false;
   end
   SUBJ{iage} = SUBJ{iage}(SUBJbool);
 end
@@ -98,8 +99,8 @@ return
 
 %% Merge mse files subjects and cond
 evoked = 'subtract'; % subtract_avgref subtract
-csd = ''; % csd or empty
-runperblock = 'yes';
+csd = 'csd'; % csd or empty
+runperblock = 'no';
 
 eeg = []; trialinfo_trl = {};
 for iage = 1:2
@@ -283,12 +284,12 @@ cd(plotpath)
 close all
 XLIM = [-0.5 1.25];
 % zlim = [1.15 1.23];
-zlim = [1.1 1.18];
-% channel = {'FC2', 'FCz', 'FC1',  'C1', 'Cz', 'C2'} % for avgref  'C3', , 'CP2', 'CPz', 'CP1'
-channel = {'AFz'};
-% channel_freq = {'FCz',  'Cz', 'CPz', 'CP1'}; %   'CP3' 'C1',
-channel_freq = {'AFz'};
-icond=4;
+zlim = [1.07 1.14];
+channel = {'FC2', 'FCz', 'FC1',  'C1', 'Cz', 'C2'} % for avgref  'C3', , 'CP2', 'CPz', 'CP1'
+% channel = {'AFz'};
+channel_freq = {'FCz',  'Cz', 'CPz', 'CP1'}; %   'CP3' 'C1',
+% channel_freq = {'AFz'};
+icond=3;
 
 f = figure; f.Position = [680         520        800         922];
 % TFR mse 
@@ -300,13 +301,13 @@ subplot(6,3,1); cfg.title = 'Entropy YA'; ft_singleplotTFR(cfg, eeg(1).mse{icond
 subplot(6,3,4); cfg.title = 'Entropy OA'; ft_singleplotTFR(cfg, eeg(2).mse{icond}); xline(0); ylabel('Time scale (ms)')
 % topo
 cfg=[];   cfg.layout = lay;   cfg.figure = 'gcf';  cfg.highlightchannel = channel; cfg.highlight = 'on';%cfg.zlim = [1.17 1.22];
-cfg.xlim = [0 0.3];   cfg.ylim = [100 150];  %cfg.zlim = zlim;
-% cfg.xlim = [0 0.3];   cfg.ylim = [60 90];  cfg.zlim = zlim;
+% cfg.xlim = [0 0.3];   cfg.ylim = [100 150];  %cfg.zlim = zlim;
+cfg.xlim = [0 0.3];   cfg.ylim = [60 90];  cfg.zlim = zlim;
 subplot(6,3,2);     ft_topoplotTFR(cfg, eeg(1).mse{icond}); %colorbar
-% cfg.zlim = zlim; [1.04 1.13];
+cfg.zlim = [1.02 1.10];
 subplot(6,3,5);     ft_topoplotTFR(cfg, eeg(2).mse{icond}); %colorbar
 % time series
-cfg=[];    cfg.figure = 'gcf';  cfg.channel = channel; cfg.xlim = XLIM; cfg.frequency = [100 150]; cfg.title = cfg.frequency;
+cfg=[];    cfg.figure = 'gcf';  cfg.channel = channel; cfg.xlim = XLIM; cfg.frequency = [60 90]; cfg.title = cfg.frequency;
 subplot(6,3,3);     ft_singleplotER(cfg, eeg(1).mse{1:2}); hold on; xline(0,'HandleVisibility','off');
 ylabel('Entropy')
 subplot(6,3,6);     ft_singleplotER(cfg, eeg(2).mse{1:2}); hold on; xline(0,'HandleVisibility','off');
@@ -370,7 +371,7 @@ for icond = 4 %1:4
   % design = log(1-hitrate1)./log(1-hitrate2);
   design = eeg(iage).mse{icond}.trialinfo(:,behav_col); 
   cfg=[]; cfg.design = design;  
-  cfg.frequency = [60 100]; cfg.avgoverfreq = 'yes';
+  cfg.frequency = [60 90]; cfg.avgoverfreq = 'yes';
   % cfg.frequency = [100 148]; cfg.avgoverfreq = 'yes';
   cfg.channel = channel;    cfg.avgoverchan = 'yes';
   cfg.latency = [-0.2 1.25];
@@ -423,7 +424,7 @@ xlim([-0.3 1.25]);
 ax=gca; ax.XTick = -0.5:0.5:1.5; ax.YTick = [-0.5:0.25:0.5];
 
 % scatter
-cfg=[]; cfg.channel = channel; cfg.latency = [0.3 0.6]; cfg.frequency = [60 100]; %[70.027211 142.952381];
+cfg=[]; cfg.channel = channel; cfg.latency = [0.5 0.5]; cfg.frequency = [60 100]; %[70.027211 142.952381];
 % cfg=[]; cfg.channel = channel; cfg.latency = [0.7 0.7]; cfg.frequency = [60 100]; %[70.027211 142.952381];
 % cfg=[]; cfg.channel = channel; cfg.latency = [1 1.2]; cfg.frequency = [60 100]; %[70.027211 142.952381];
 cfg.avgoverchan = 'yes'; cfg.avgovertime = 'yes'; cfg.avgoverfreq = 'yes';
