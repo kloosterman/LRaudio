@@ -26,12 +26,13 @@ age_groups = {'YA' 'OA' ''}; % 3 is all subj
 % define subjects
 SUBJ=cell(1,2);
 for iage = 1:2
-  for i=1:37
+  for i=1:36
     SUBJ{iage}{end+1} = sprintf('%d', i);
   end
   SUBJbool = true(size(SUBJ{iage}));
   if strcmp(age_groups{iage}, 'YA')
     SUBJbool([10, 12, 15, 17 ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
+    SUBJbool([10, 12, 15, 17,   11, 9, 7, 30, 35, 19, ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
     % exclude 37 10 and 15, 17 missing, 12 conditions missing,
     % #6 staircase not converging + datamissing, accuracy only 0.65
     % #31: staircase at max, accuracy only 0.6006
@@ -43,7 +44,7 @@ for iage = 1:2
     % SUBJbool([37, 10, 12, 15, 17 ]) = false;
   else
     % 7 and 34 don't exist
-    SUBJbool([ 7, 34, 9 ]) = false;
+    SUBJbool([ 7, 34, 9, 26 ]) = false;
   end
   SUBJ{iage} = SUBJ{iage}(SUBJbool);
 end
@@ -54,7 +55,7 @@ disp(SUBJ)
 overwrite = 1;
 cfglist = {}; cfg=[];
 cfg.evoked = 'subtract'; % empty, regress, or subtract
-cfg.csd = 'csd'; % empty or csd
+cfg.csd = ''; % empty or csd
 cfg.sensor_or_source = 'sensor';
 cfg.runperblock = 'no'; % empty for all together, or per block.
 for iage = 1:2
