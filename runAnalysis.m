@@ -32,7 +32,7 @@ for iage = 1:2
   SUBJbool = true(size(SUBJ{iage}));
   if strcmp(age_groups{iage}, 'YA')
     SUBJbool([10, 12, 15, 17 ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
-    SUBJbool([10, 12, 15, 17,   11, 9, 7, 30, 35, 19, ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
+    % SUBJbool([10, 12, 15, 17,   11, 9, 7, 30, 35, 19, ]) = false; % exclude 10 and 15, 17 missing, 12 conditions missing
     % exclude 37 10 and 15, 17 missing, 12 conditions missing,
     % #6 staircase not converging + datamissing, accuracy only 0.65
     % #31: staircase at max, accuracy only 0.6006
@@ -100,7 +100,7 @@ return
 
 %% Merge mse files subjects and cond
 evoked = 'subtract'; % subtract_avgref subtract
-csd = ''; % csd or empty
+csd = 'csd'; % csd or empty
 runperblock = 'no';
 
 eeg = []; trialinfo_trl = {};
